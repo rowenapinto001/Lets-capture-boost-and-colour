@@ -70,6 +70,7 @@ function buildTheme(base) {
   t.link = t.link || t.accent;
   t.linkHover = t.linkHover || (t.isDark ? Utilities.lighten(t.link, 0.18) : Utilities.darken(t.link, 0.15));
   t.brightAccent = t.brightAccent || (t.isDark ? Utilities.lighten(t.accent, 0.18) : t.strongAccent);
+  strengthenTextTone(t);
   t.blackBase = t.blackBase || (t.isDark ? '#050505' : t.veryDark);
   t.deepestBackground = t.deepestBackground || t.pageBackground;
   t.subtleAccentSurface = t.subtleAccentSurface || (t.isDark
@@ -256,6 +257,95 @@ function getThemeBaseColor(theme) {
   return theme.baseColor || theme.accent || theme.strongAccent || theme.secondaryAccent || '#8B5CF6';
 }
 
+function forceTextTone(color, theme, options = {}) {
+  const minContrast = options.minContrast || 4.5;
+  const targetLuminance = options.targetLuminance;
+  const background = options.background || theme.surface || theme.pageBackground;
+  let next = color;
+  let attempts = 0;
+  while (attempts < 18) {
+    const luminance = Utilities.relativeLuminance(next);
+    const hasContrast = Utilities.contrastRatio(next, background) >= minContrast;
+    const hasTone = theme.isDark ? luminance >= targetLuminance : luminance <= targetLuminance;
+    if (hasTone && hasContrast) return next;
+    next = theme.isDark ? Utilities.lighten(next, 0.08) : Utilities.darken(next, 0.08);
+    attempts += 1;
+  }
+  return ensureTextContrast(next, background, minContrast);
+}
+
+function strengthenTextTone(theme) {
+  const surface = theme.surface || theme.pageBackground;
+  const inputSurface = theme.inputBackground || surface;
+  const selectedSurface = theme.selectedBackground || surface;
+  const buttonSurface = theme.buttonBackground || selectedSurface;
+  const secondaryButtonSurface = theme.secondaryButtonBackground || surface;
+
+  const tones = theme.isDark
+    ? {
+      primary: 0.84,
+      secondary: 0.7,
+      muted: 0.54,
+      link: 0.62,
+      minimumPrimary: 7,
+      minimumBody: 5.2
+    }
+    : {
+      primary: 0.06,
+      secondary: 0.1,
+      muted: 0.14,
+      link: 0.12,
+      minimumPrimary: 7,
+      minimumBody: 5.2
+    };
+
+  theme.primaryText = forceTextTone(theme.primaryText, theme, {
+    background: surface,
+    targetLuminance: tones.primary,
+    minContrast: tones.minimumPrimary
+  });
+  theme.secondaryText = forceTextTone(theme.secondaryText, theme, {
+    background: surface,
+    targetLuminance: tones.secondary,
+    minContrast: tones.minimumBody
+  });
+  theme.mutedText = forceTextTone(theme.mutedText, theme, {
+    background: surface,
+    targetLuminance: tones.muted,
+    minContrast: 4.8
+  });
+  theme.inputText = forceTextTone(theme.inputText || theme.primaryText, theme, {
+    background: inputSurface,
+    targetLuminance: tones.primary,
+    minContrast: tones.minimumPrimary
+  });
+  theme.link = forceTextTone(theme.link, theme, {
+    background: surface,
+    targetLuminance: tones.link,
+    minContrast: 4.8
+  });
+  theme.linkHover = forceTextTone(theme.linkHover || theme.link, theme, {
+    background: surface,
+    targetLuminance: theme.isDark ? tones.primary : tones.primary,
+    minContrast: 5.2
+  });
+  theme.secondaryButtonText = forceTextTone(theme.secondaryButtonText || theme.primaryText, theme, {
+    background: secondaryButtonSurface,
+    targetLuminance: tones.primary,
+    minContrast: 5.2
+  });
+  theme.selectedText = forceTextTone(theme.selectedText || theme.primaryText, theme, {
+    background: selectedSurface,
+    targetLuminance: theme.isDark ? tones.primary : tones.primary,
+    minContrast: 5.2
+  });
+  theme.buttonText = forceTextTone(theme.buttonText || resolveReadableText(buttonSurface), theme, {
+    background: buttonSurface,
+    targetLuminance: Utilities.relativeLuminance(buttonSurface) < 0.42 ? 0.88 : tones.primary,
+    minContrast: 5.2
+  });
+}
+
 function buildLightGradients(theme) {
   const color = Utilities.isValidHex(getThemeBaseColor(theme)) ? getThemeBaseColor(theme) : '#8B5CF6';
   const hsl = hexToHsl(color);
@@ -268,8 +358,8 @@ function buildLightGradients(theme) {
   const surfaceTint = hslFromBase(hsl, Utilities.clamp(tintSat + 12, 30, 70), 98);
   const pageBackground = theme.pageBackground || '#F8FAFC';
   const secondaryBackground = theme.secondaryBackground || paleTint;
-  const gradientStart = Utilities.mixColors(pageBackground, color, 0.075);
-  const gradientEnd = Utilities.mixColors(secondaryBackground, color, 0.085);
+  const gradientStart = Utilities.mixColors(pageBackground, color, 0.16);
+  const gradientEnd = Utilities.mixColors(secondaryBackground, color, 0.18);
   const surface = theme.surface || '#FFFFFF';
   const elevatedSurface = theme.elevatedSurface || surfaceTint;
   const sidebarBackground = theme.sidebarBackground || secondaryBackground;
@@ -283,9 +373,12 @@ function buildLightGradients(theme) {
 
   return {
     screenGradient: [
-      `radial-gradient(circle at 18% 0%, ${rgbaFromHex(strongGlow, 0.38)} 0, transparent 34rem)`,
-      `radial-gradient(circle at 86% 12%, ${rgbaFromHex(softGlow, 0.3)} 0, transparent 32rem)`,
-      `radial-gradient(circle at 50% 56%, ${rgbaFromHex(paleGlow, 0.25)} 0, transparent 44rem)`,
+      `linear-gradient(90deg, ${rgbaFromHex(strongGlow, 0.3)} 0%, ${rgbaFromHex(softGlow, 0.19)} 18%, transparent 42%)`,
+      `radial-gradient(circle at 18% 0%, ${rgbaFromHex(strongGlow, 0.52)} 0, transparent 34rem)`,
+      `radial-gradient(circle at 50% 4%, ${rgbaFromHex(strongGlow, 0.24)} 0, transparent 28rem)`,
+      `radial-gradient(circle at 68% 6%, ${rgbaFromHex(strongGlow, 0.26)} 0, transparent 30rem)`,
+      `radial-gradient(circle at 86% 12%, ${rgbaFromHex(softGlow, 0.4)} 0, transparent 32rem)`,
+      `radial-gradient(circle at 50% 56%, ${rgbaFromHex(paleGlow, 0.34)} 0, transparent 44rem)`,
       `linear-gradient(135deg, ${gradientStart} 0%, ${pageBackground} 46%, ${gradientEnd} 100%)`
     ].join(', '),
     headerGradient: `linear-gradient(135deg, ${surface} 0%, ${elevatedSurface} 48%, ${hoverBackground} 100%)`,
@@ -321,6 +414,7 @@ function generateDarkTheme(baseColor, options = {}) {
   const gradientMid = hslFromBase(hsl, surfaceSat, isAmoled ? 9 : 15);
   const gradientHigh = hslFromBase(hsl, Utilities.clamp(surfaceSat + 10, 50, 82), isAmoled ? 15 : 24);
   const screenGradient = [
+    `linear-gradient(90deg, ${rgbaFromHex(accent, isAmoled ? 0.16 : 0.13)} 0%, ${rgbaFromHex(strongAccent, isAmoled ? 0.1 : 0.085)} 18%, transparent 44%)`,
     `radial-gradient(circle at 20% 0%, ${rgbaFromHex(brightAccent, isAmoled ? 0.34 : 0.3)} 0, transparent 38rem)`,
     `radial-gradient(circle at 82% 10%, ${rgbaFromHex(accent, isAmoled ? 0.32 : 0.26)} 0, transparent 34rem)`,
     `radial-gradient(circle at 50% 46%, ${rgbaFromHex(strongAccent, isAmoled ? 0.16 : 0.14)} 0, transparent 42rem)`,
@@ -514,6 +608,106 @@ const TEXT_TAGS = new Set([
   'SMALL', 'SPAN', 'STRONG', 'TD', 'TEXTAREA', 'TH', 'TIME'
 ]);
 
+const YTMUSIC_READABLE_TEXT_VARS = {
+  '--ytmusic-color-white1': 'text:primary',
+  '--ytmusic-color-white2': 'text:primary',
+  '--ytmusic-color-white3': 'text:secondary',
+  '--ytmusic-color-white4': 'text:secondary',
+  '--ytmusic-color-white5': 'text:muted',
+  '--ytmusic-color-black1': 'text:primary',
+  '--ytmusic-color-black2': 'text:primary',
+  '--ytmusic-color-black3': 'text:secondary',
+  '--ytmusic-color-black4': 'text:secondary',
+  '--ytmusic-text-primary': 'text:primary',
+  '--ytmusic-text-secondary': 'text:secondary',
+  '--ytmusic-text-disabled': 'text:muted'
+};
+
+const GOOGLE_UNBOXED_SELECTORS = [
+  '.g',
+  '.MjjYud',
+  '.kp-wholepage',
+  '.kp-blk',
+  '.wDYxhc',
+  '.xpdopen',
+  '.ULSxyf',
+  '.cUnQKe',
+  '.Wt5Tfe',
+  '.related-question-pair',
+  '.commercial-unit-desktop-top',
+  '[data-attrid]'
+].join(', ');
+
+const GOOGLE_HEADER_SELECTORS = [
+  '#gb',
+  '#searchform',
+  '.sfbg',
+  '.appbar',
+  '#top_nav',
+  '#hdtb',
+  '#slim_appbar',
+  '#before-appbar',
+  '.minidiv',
+  '.Lj9fsd',
+  '.yg51vc'
+].join(', ');
+
+const GOOGLE_SEARCHBOX_SELECTORS = [
+  '.RNNXgb',
+  'form[role="search"]',
+  'textarea[name="q"]',
+  'input[name="q"]'
+].join(', ');
+
+const YOUTUBE_UNBOXED_SELECTORS = [
+  'ytd-rich-item-renderer',
+  'ytd-video-renderer',
+  'ytd-compact-video-renderer',
+  'ytd-playlist-renderer',
+  'ytd-channel-renderer',
+  'ytd-rich-grid-media',
+  'ytd-rich-grid-row',
+  'ytd-item-section-renderer',
+  'ytd-watch-next-secondary-results-renderer',
+  'ytd-watch-metadata',
+  '#contents.ytd-rich-grid-renderer',
+  '#primary-inner',
+  '#secondary-inner',
+  'ytmusic-player-queue',
+  'ytmusic-player-queue-item',
+  'ytmusic-responsive-list-item-renderer',
+  'ytmusic-shelf-renderer',
+  'ytmusic-carousel-shelf-renderer'
+].join(', ');
+
+const YOUTUBE_LOGO_SELECTORS = [
+  'ytd-topbar-logo-renderer',
+  'ytd-logo',
+  'a#logo',
+  '#logo-icon',
+  '#logo-icon-container'
+].join(', ');
+
+const YOUTUBE_MUSIC_LOGO_SELECTORS = [
+  'ytmusic-logo',
+  'ytmusic-nav-bar [id*="logo" i]',
+  'ytmusic-nav-bar [class*="logo" i]'
+].join(', ');
+
+const YOUTUBE_CHIP_SELECTORS = [
+  'ytd-chip-cloud-chip-renderer',
+  'yt-chip-cloud-chip-renderer',
+  '.ytChipShapeChip'
+].join(', ');
+
+const YOUTUBE_SELECTED_CHIP_SELECTORS = [
+  'ytd-chip-cloud-chip-renderer[aria-selected="true"]',
+  'yt-chip-cloud-chip-renderer[aria-selected="true"]',
+  '.ytChipShapeChip[aria-selected="true"]',
+  '.ytChipShapeChip[aria-pressed="true"]',
+  '.ytChipShapeChip[selected]'
+].join(', ');
+
 const WEBSITE_ADAPTERS = [
   {
     id: 'generic',
@@ -528,7 +722,36 @@ const WEBSITE_ADAPTERS = [
       selected: ['[aria-selected="true"]', '[aria-pressed="true"]', '.active', '.selected', '[selected]']
     },
     text: {
-      primary: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+      primary: [
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'header',
+        'header a',
+        'header button',
+        'header [role="button"]',
+        'nav',
+        'nav a',
+        'nav button',
+        'aside',
+        'aside a',
+        'aside button',
+        '[role="navigation"]',
+        '[role="navigation"] a',
+        '[role="navigation"] button',
+        '[role="tablist"]',
+        '[role="tab"]',
+        '.navbar',
+        '.topbar',
+        '.sidebar',
+        '.sidenav',
+        '.side-nav',
+        '.drawer',
+        '.rail'
+      ],
       muted: ['small', 'time', 'figcaption', '.muted', '.meta', '.metadata', '.caption', '.subtitle'],
       link: ['a', '[role="link"]']
     },
@@ -543,14 +766,13 @@ const WEBSITE_ADAPTERS = [
       page: ['ytd-app', 'ytd-browse', 'ytd-page-manager', 'ytd-watch-flexy', '#page-manager', '#content.ytd-app'],
       header: ['ytd-masthead', '#masthead-container'],
       sidebar: ['ytd-guide-renderer', 'ytd-mini-guide-renderer', '#guide-content', 'tp-yt-app-drawer'],
-      card: ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-compact-video-renderer', 'ytd-playlist-renderer', 'ytd-channel-renderer'],
       input: ['#container.ytd-searchbox', '#search-form', 'input#search'],
       menu: ['ytd-menu-popup-renderer', 'ytd-popup-container', 'tp-yt-paper-dialog', 'tp-yt-paper-listbox'],
       secondaryButton: ['ytd-chip-cloud-chip-renderer', 'yt-chip-cloud-chip-renderer', '.ytChipShapeChip'],
       selected: ['ytd-chip-cloud-chip-renderer[aria-selected="true"]', '.ytChipShapeChip[aria-selected="true"]', 'ytd-guide-entry-renderer[active]', 'ytd-mini-guide-entry-renderer[active]']
     },
     text: {
-      primary: ['#video-title', '#title', 'ytd-rich-grid-media #video-title', 'ytd-video-renderer #video-title'],
+      primary: ['ytd-masthead', 'ytd-masthead a', 'ytd-masthead button', 'ytd-guide-renderer', 'ytd-guide-entry-renderer', 'ytd-mini-guide-entry-renderer', '#video-title', '#title', 'ytd-rich-grid-media #video-title', 'ytd-video-renderer #video-title'],
       muted: ['#metadata-line', '#channel-name', 'yt-formatted-string.ytd-video-meta-block'],
       link: ['a']
     },
@@ -569,9 +791,66 @@ const WEBSITE_ADAPTERS = [
         '--yt-spec-text-primary': 'primary',
         '--yt-spec-text-secondary': 'muted',
         '--yt-spec-text-disabled': 'muted',
+        '--yt-spec-icon-active-other': 'text:primary',
+        '--yt-spec-icon-inactive': 'text:primary',
+        '--yt-spec-icon-disabled': 'text:muted',
         '--yt-spec-call-to-action': 'accent',
         '--yt-spec-brand-button-background': 'selected'
       }
+    }
+  },
+  {
+    id: 'youtube-music',
+    background: {
+      page: ['ytmusic-app', 'ytmusic-app-layout', 'ytmusic-player-page', '#layout'],
+      header: ['ytmusic-nav-bar', '#nav-bar-background'],
+      sidebar: ['ytmusic-guide-renderer', '#guide-wrapper', '#guide'],
+      input: ['ytmusic-search-box', 'input#input'],
+      menu: ['ytmusic-menu-popup-renderer', 'tp-yt-paper-listbox', 'tp-yt-paper-dialog'],
+      secondaryButton: ['ytmusic-chip-cloud-chip-renderer', 'ytmusic-tab-renderer', '.tab'],
+      selected: ['ytmusic-chip-cloud-chip-renderer[aria-selected="true"]', 'ytmusic-tab-renderer[selected]', '.tab[selected]', '[aria-selected="true"]']
+    },
+    text: {
+      primary: [
+        'ytmusic-nav-bar',
+        'ytmusic-nav-bar a',
+        'ytmusic-nav-bar button',
+        'ytmusic-guide-renderer',
+        'ytmusic-guide-entry-renderer',
+        'ytmusic-player-queue #title',
+        'ytmusic-player-queue .title',
+        'ytmusic-player-queue yt-formatted-string',
+        'ytmusic-player-queue-item #title',
+        'ytmusic-responsive-list-item-renderer #title',
+        'ytmusic-tabs yt-formatted-string',
+        'ytmusic-tab-renderer'
+      ],
+      secondary: [
+        'ytmusic-player-queue #byline',
+        'ytmusic-player-queue .byline',
+        'ytmusic-player-queue .subtitle',
+        'ytmusic-responsive-list-item-renderer #subtitle'
+      ],
+      muted: [
+        'ytmusic-player-queue .duration',
+        'ytmusic-player-queue #duration',
+        'ytmusic-player-queue .secondary-flex-columns',
+        'ytmusic-responsive-list-item-renderer .secondary-flex-columns'
+      ],
+      link: ['ytmusic-player-queue a', 'ytmusic-app a']
+    },
+    border: {
+      border: ['ytmusic-player-queue', 'ytmusic-player-queue-item', 'ytmusic-nav-bar', 'ytmusic-guide-renderer'],
+      strong: ['ytmusic-tab-renderer[selected]', '[aria-selected="true"]']
+    },
+    variables: {
+      'ytmusic-app': YTMUSIC_READABLE_TEXT_VARS,
+      'ytmusic-app-layout': YTMUSIC_READABLE_TEXT_VARS,
+      'ytmusic-nav-bar': YTMUSIC_READABLE_TEXT_VARS,
+      'ytmusic-guide-renderer': YTMUSIC_READABLE_TEXT_VARS,
+      'ytmusic-player-page': YTMUSIC_READABLE_TEXT_VARS,
+      'ytmusic-player-queue': YTMUSIC_READABLE_TEXT_VARS,
+      'ytmusic-tabs': YTMUSIC_READABLE_TEXT_VARS
     }
   },
   {
@@ -587,7 +866,7 @@ const WEBSITE_ADAPTERS = [
       selected: ['[aria-selected="true"]', '[aria-current="page"]', '[data-active="true"]', '[class*="bg-token-sidebar-surface-tertiary" i]']
     },
     text: {
-      primary: ['h1', 'h2', 'h3', '[data-message-author-role]', '.markdown'],
+      primary: ['header', 'aside', 'nav', 'header a', 'aside a', 'nav a', 'header button', 'aside button', 'nav button', 'h1', 'h2', 'h3', '[data-message-author-role]', '.markdown'],
       muted: ['small', '[class*="text-token-text-secondary" i]', '[class*="text-token-text-tertiary" i]'],
       link: ['a', '[role="link"]']
     },
@@ -603,11 +882,11 @@ const WEBSITE_ADAPTERS = [
         '--sidebar-surface-primary': 'sidebar',
         '--sidebar-surface-secondary': 'surface',
         '--sidebar-surface-tertiary': 'selected',
-        '--text-primary': 'primary',
-        '--text-secondary': 'secondary',
-        '--text-tertiary': 'muted',
-        '--border-light': 'border',
-        '--border-medium': 'strong'
+        '--text-primary': 'text:primary',
+        '--text-secondary': 'text:secondary',
+        '--text-tertiary': 'text:muted',
+        '--border-light': 'border:border',
+        '--border-medium': 'border:strong'
       }
     }
   },
@@ -616,15 +895,15 @@ const WEBSITE_ADAPTERS = [
     background: {
       page: ['body', '#main', '#rcnt'],
       header: ['header', '#gb', '#searchform', '.sfbg', '.appbar'],
-      card: ['.g', '.MjjYud', '.kp-wholepage', '.commercial-unit-desktop-top', '[data-attrid]'],
       input: ['textarea[name="q"]', 'input[name="q"]', '.RNNXgb'],
       menu: ['[role="menu"]', '[role="listbox"]'],
       selected: ['[aria-selected="true"]', '.hdtb-mitem.hdtb-msel']
     },
     text: {
-      primary: ['h1', 'h2', 'h3', '.LC20lb', '.DKV0Md'],
-      muted: ['.VwiC3b', '.IsZvec', '.MUxGbd', '.f'],
-      link: ['a']
+      primary: ['h1', 'h2', 'h3', '.LC20lb', '.DKV0Md', '.yuRUbf', '.kp-wholepage [role="heading"]', '[data-attrid] span', '.wDYxhc span'],
+      secondary: ['.hgKElc', '.kno-rdesc', '.wwUB2c', '.BNeawe', '.qLRx3b', '.bNg8Rb'],
+      muted: ['.VwiC3b', '.IsZvec', '.MUxGbd', '.f', '.iUh30', '.tjvcx', '.NJjxre', '.OSrXXb', '.LEwnzc'],
+      link: ['a', '.yuRUbf a']
     },
     border: {
       border: ['.RNNXgb', '.g', '.MjjYud', '.kp-wholepage']
@@ -1351,12 +1630,20 @@ function buildRoleCssRules(adapter) {
   });
   Object.entries(adapter.variables || {}).forEach(([selector, variables]) => {
     const declarations = Object.entries(variables).map(([name, role]) => {
-      const cssVar = BACKGROUND_ROLE_VARS[role] || TEXT_ROLE_VARS[role] || BORDER_ROLE_VARS[role] || `--lcbc-${role}`;
+      const cssVar = variableForRole(role);
       return `  ${name}: var(${cssVar}) !important;`;
     }).join('\n');
     rules.push(`:root[${THEME_ATTR}] ${selector} {\n${declarations}\n}`);
   });
   return rules.join('\n\n');
+}
+
+function variableForRole(role) {
+  if (typeof role !== 'string') return '--lcbc-primary-text';
+  if (role.startsWith('bg:')) return BACKGROUND_ROLE_VARS[role.slice(3)] || '--lcbc-surface';
+  if (role.startsWith('text:')) return TEXT_ROLE_VARS[role.slice(5)] || '--lcbc-primary-text';
+  if (role.startsWith('border:')) return BORDER_ROLE_VARS[role.slice(7)] || '--lcbc-border';
+  return BACKGROUND_ROLE_VARS[role] || TEXT_ROLE_VARS[role] || BORDER_ROLE_VARS[role] || `--lcbc-${role}`;
 }
 
 function buildWebsiteAdapterCss() {
@@ -1487,6 +1774,51 @@ function buildThemeCss(theme, options) {
   background-image: var(--lcbc-selected-gradient) !important;
 }
 
+:root[${THEME_ATTR}] :where(${GOOGLE_UNBOXED_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_UNBOXED_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}] :where(${GOOGLE_SEARCHBOX_SELECTORS}) {
+  background-color: var(--lcbc-input-bg) !important;
+  background-image: var(--lcbc-input-gradient) !important;
+  color: var(--lcbc-input-text) !important;
+  border-color: var(--lcbc-border) !important;
+  box-shadow: 0 0 0 1px var(--lcbc-border), 0 10px 28px var(--lcbc-shadow) !important;
+}
+
+:root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}, ${GOOGLE_SEARCHBOX_SELECTORS}) :where(a, button, [role="button"], [aria-label]:not(input):not(textarea), span, div) {
+  color: inherit !important;
+}
+
+:root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}, ${GOOGLE_SEARCHBOX_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${GOOGLE_SEARCHBOX_SELECTORS}) :where(input, textarea) {
+  background: transparent !important;
+  color: var(--lcbc-input-text) !important;
+  caret-color: var(--lcbc-accent) !important;
+}
+
 :root[${THEME_ATTR}] [data-lcbc-text-role="primary"] {
   color: var(--lcbc-local-text, var(--lcbc-primary-text)) !important;
 }
@@ -1520,6 +1852,96 @@ function buildThemeCss(theme, options) {
 :root[${THEME_ATTR}] [data-lcbc-text-role="success"] { color: var(--lcbc-success) !important; }
 :root[${THEME_ATTR}] [data-lcbc-text-role="warning"] { color: var(--lcbc-warning) !important; }
 :root[${THEME_ATTR}] [data-lcbc-text-role="error"] { color: var(--lcbc-error) !important; }
+
+:root[${THEME_ATTR}] :where(header, nav, aside, [role="banner"], [role="navigation"], [data-lcbc-bg-role="header"], [data-lcbc-bg-role="sidebar"], ytd-masthead, ytd-guide-renderer, ytd-mini-guide-renderer, ytmusic-nav-bar, ytmusic-guide-renderer, #gb, #searchform, .navbar, .topbar, .sidebar, .sidenav, .side-nav, .drawer, .rail) {
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}] :where(header, nav, aside, [role="banner"], [role="navigation"], [data-lcbc-bg-role="header"], [data-lcbc-bg-role="sidebar"], ytd-masthead, ytd-guide-renderer, ytd-mini-guide-renderer, ytmusic-nav-bar, ytmusic-guide-renderer, #gb, #searchform, .navbar, .topbar, .sidebar, .sidenav, .side-nav, .drawer, .rail) :where(a, button, [role="button"], [role="tab"], [aria-label], span, yt-formatted-string, tp-yt-paper-item, ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer, ytmusic-guide-entry-renderer, ytmusic-tab-renderer) {
+  color: inherit !important;
+}
+
+:root[${THEME_ATTR}] :where(header, nav, aside, [role="banner"], [role="navigation"], [data-lcbc-bg-role="header"], [data-lcbc-bg-role="sidebar"], ytd-masthead, ytd-guide-renderer, ytd-mini-guide-renderer, ytmusic-nav-bar, ytmusic-guide-renderer, #gb, #searchform, .navbar, .topbar, .sidebar, .sidenav, .side-nav, .drawer, .rail) :where(yt-icon, ytmusic-icon, tp-yt-iron-icon, iron-icon, .material-icons, .material-symbols-outlined, svg:not([class*="logo" i]):not([id*="logo" i])) {
+  color: inherit !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+:root[${THEME_ATTR}] :where(header, nav, aside, [role="banner"], [role="navigation"], [data-lcbc-bg-role="header"], [data-lcbc-bg-role="sidebar"], ytd-masthead, ytd-guide-renderer, ytd-mini-guide-renderer, ytmusic-nav-bar, ytmusic-guide-renderer, #gb, #searchform, .navbar, .topbar, .sidebar, .sidenav, .side-nav, .drawer, .rail) :where(button, a[aria-label], [role="button"], [role="tab"], [aria-label]:not(input):not(textarea), ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer, ytmusic-guide-entry-renderer, ytmusic-tab-renderer, ytmusic-cast-button, ytmusic-settings-button, ytmusic-menu-renderer, .gb_A, .gb_B, .gb_C, .gb_D, .gb_E, .gb_F) {
+  color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(header, nav, aside, [role="banner"], [role="navigation"], [data-lcbc-bg-role="header"], [data-lcbc-bg-role="sidebar"], ytd-masthead, ytd-guide-renderer, ytd-mini-guide-renderer, ytmusic-nav-bar, ytmusic-guide-renderer, #gb, #searchform, .navbar, .topbar, .sidebar, .sidenav, .side-nav, .drawer, .rail) :where(button, a[aria-label], [role="button"], [role="tab"], [aria-label]:not(input):not(textarea), ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer, ytmusic-guide-entry-renderer, ytmusic-tab-renderer, ytmusic-cast-button, ytmusic-settings-button, ytmusic-menu-renderer, .gb_A, .gb_B, .gb_C, .gb_D, .gb_E, .gb_F) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, yt-icon, yt-icon *, ytmusic-icon, ytmusic-icon *, tp-yt-iron-icon, tp-yt-iron-icon *, iron-icon, iron-icon *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_LOGO_SELECTORS}) {
+  color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_LOGO_SELECTORS}) :where(svg, svg *, yt-icon, yt-icon *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: revert !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i]) {
+  color: #ff0033 !important;
+  fill: #ff0033 !important;
+  stroke: revert !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ffffff" i], [fill="#fff" i], [fill="white" i]) {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: revert !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_MUSIC_LOGO_SELECTORS}) {
+  color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_MUSIC_LOGO_SELECTORS}) :where(svg, svg *, yt-icon, yt-icon *, ytmusic-icon, ytmusic-icon *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: revert !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_MUSIC_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i]) {
+  color: #ff0033 !important;
+  fill: #ff0033 !important;
+  stroke: revert !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_CHIP_SELECTORS}) {
+  background-color: var(--lcbc-secondary-button-bg) !important;
+  background-image: var(--lcbc-surface-gradient) !important;
+  color: var(--lcbc-secondary-button-text) !important;
+  border: 1px solid var(--lcbc-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px var(--lcbc-shadow) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_CHIP_SELECTORS}) :where(a, span, yt-formatted-string, #text) {
+  color: inherit !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}) {
+  background-color: var(--lcbc-selected-bg) !important;
+  background-image: var(--lcbc-selected-gradient) !important;
+  color: var(--lcbc-selected-text) !important;
+  border-color: var(--lcbc-strong-border) !important;
+  box-shadow: 0 2px 8px var(--lcbc-shadow) !important;
+}
 
 :root[${THEME_ATTR}] [data-lcbc-border-role="border"] {
   border-color: var(--lcbc-local-border, var(--lcbc-border)) !important;
