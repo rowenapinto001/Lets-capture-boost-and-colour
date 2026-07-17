@@ -3,6 +3,7 @@
 
 const THEME_STYLE_ID = 'lcbc-theme-style';
 const THEME_ATTR = 'data-lcbc-theme-active';
+const SITE_ATTR = 'data-lcbc-site';
 
 function buildTheme(base) {
   const t = { ...base };
@@ -351,15 +352,16 @@ function buildLightGradients(theme) {
   const hsl = hexToHsl(color);
   const accentSat = Utilities.clamp(Math.max(hsl.s, 68), 58, 96);
   const tintSat = Utilities.clamp(Math.max(hsl.s * 0.42, 24), 22, 58);
-  const strongGlow = hslFromBase(hsl, accentSat, 68);
-  const softGlow = hslFromBase(hsl, Utilities.clamp(accentSat - 6, 58, 92), 78);
-  const paleGlow = hslFromBase(hsl, Utilities.clamp(tintSat + 22, 44, 78), 88);
+  const strongGlow = hslFromBase(hsl, accentSat, 58);
+  const softGlow = hslFromBase(hsl, Utilities.clamp(accentSat - 6, 58, 92), 68);
+  const paleGlow = hslFromBase(hsl, Utilities.clamp(tintSat + 22, 44, 78), 80);
   const paleTint = hslFromBase(hsl, Utilities.clamp(tintSat + 10, 28, 68), 95);
   const surfaceTint = hslFromBase(hsl, Utilities.clamp(tintSat + 12, 30, 70), 98);
   const pageBackground = theme.pageBackground || '#F8FAFC';
   const secondaryBackground = theme.secondaryBackground || paleTint;
-  const gradientStart = Utilities.mixColors(pageBackground, color, 0.16);
-  const gradientEnd = Utilities.mixColors(secondaryBackground, color, 0.18);
+  const gradientStart = Utilities.mixColors(pageBackground, color, 0.3);
+  const gradientMid = Utilities.mixColors(pageBackground, color, 0.12);
+  const gradientEnd = Utilities.mixColors(secondaryBackground, color, 0.32);
   const surface = theme.surface || '#FFFFFF';
   const elevatedSurface = theme.elevatedSurface || surfaceTint;
   const sidebarBackground = theme.sidebarBackground || secondaryBackground;
@@ -373,13 +375,13 @@ function buildLightGradients(theme) {
 
   return {
     screenGradient: [
-      `linear-gradient(90deg, ${rgbaFromHex(strongGlow, 0.3)} 0%, ${rgbaFromHex(softGlow, 0.19)} 18%, transparent 42%)`,
-      `radial-gradient(circle at 18% 0%, ${rgbaFromHex(strongGlow, 0.52)} 0, transparent 34rem)`,
-      `radial-gradient(circle at 50% 4%, ${rgbaFromHex(strongGlow, 0.24)} 0, transparent 28rem)`,
-      `radial-gradient(circle at 68% 6%, ${rgbaFromHex(strongGlow, 0.26)} 0, transparent 30rem)`,
-      `radial-gradient(circle at 86% 12%, ${rgbaFromHex(softGlow, 0.4)} 0, transparent 32rem)`,
-      `radial-gradient(circle at 50% 56%, ${rgbaFromHex(paleGlow, 0.34)} 0, transparent 44rem)`,
-      `linear-gradient(135deg, ${gradientStart} 0%, ${pageBackground} 46%, ${gradientEnd} 100%)`
+      `linear-gradient(90deg, ${rgbaFromHex(strongGlow, 0.5)} 0%, ${rgbaFromHex(softGlow, 0.34)} 20%, transparent 46%)`,
+      `radial-gradient(circle at 18% 0%, ${rgbaFromHex(strongGlow, 0.7)} 0, transparent 34rem)`,
+      `radial-gradient(circle at 50% 4%, ${rgbaFromHex(strongGlow, 0.42)} 0, transparent 28rem)`,
+      `radial-gradient(circle at 68% 6%, ${rgbaFromHex(strongGlow, 0.44)} 0, transparent 30rem)`,
+      `radial-gradient(circle at 86% 12%, ${rgbaFromHex(softGlow, 0.58)} 0, transparent 32rem)`,
+      `radial-gradient(circle at 50% 56%, ${rgbaFromHex(paleGlow, 0.52)} 0, transparent 44rem)`,
+      `linear-gradient(135deg, ${gradientStart} 0%, ${gradientMid} 46%, ${gradientEnd} 100%)`
     ].join(', '),
     headerGradient: `linear-gradient(135deg, ${surface} 0%, ${elevatedSurface} 48%, ${hoverBackground} 100%)`,
     sidebarGradient: `linear-gradient(180deg, ${sidebarBackground} 0%, ${pageBackground} 100%)`,
@@ -608,6 +610,11 @@ const TEXT_TAGS = new Set([
   'SMALL', 'SPAN', 'STRONG', 'TD', 'TEXTAREA', 'TH', 'TIME'
 ]);
 
+const TEXT_BACKGROUND_BLOCKED_TAGS = new Set([
+  ...TEXT_TAGS,
+  'YT-FORMATTED-STRING'
+]);
+
 const YTMUSIC_READABLE_TEXT_VARS = {
   '--ytmusic-color-white1': 'text:primary',
   '--ytmusic-color-white2': 'text:primary',
@@ -657,6 +664,42 @@ const GOOGLE_SEARCHBOX_SELECTORS = [
   'form[role="search"]',
   'textarea[name="q"]',
   'input[name="q"]'
+].join(', ');
+
+const GOOGLE_SEARCH_SHELL_SELECTORS = [
+  '.RNNXgb',
+  '.A8SBwf',
+  '[jsname="RNNXgb"]'
+].join(', ');
+
+const GOOGLE_LOGO_SELECTORS = [
+  '#logo',
+  '#logo img',
+  '#logo svg',
+  'a[aria-label="Google"]',
+  'img[alt="Google"]',
+  'svg[aria-label="Google"]',
+  '.jfN4p',
+  '.logo'
+].join(', ');
+
+const GOOGLE_RESULT_CHIP_SELECTORS = [
+  '#search [role="tab"]',
+  '#search [role="button"]',
+  '#rcnt [role="tab"]',
+  '#rcnt [role="button"]',
+  '.kp-wholepage [role="tab"]',
+  '.kp-wholepage [role="button"]',
+  '.wDYxhc [role="tab"]',
+  '.wDYxhc [role="button"]',
+  '.cUnQKe [role="tab"]',
+  '.cUnQKe [role="button"]',
+  '[aria-label="Overview"]',
+  '[aria-label*="Usage example" i]',
+  '[aria-label*="Similar" i][aria-label*="opposite" i]',
+  '[data-name="Overview"]',
+  '[data-name*="Usage example" i]',
+  '[data-name*="Similar" i][data-name*="opposite" i]'
 ].join(', ');
 
 const YOUTUBE_UNBOXED_SELECTORS = [
@@ -715,13 +758,117 @@ const YOUTUBE_TOP_GRADIENT_SELECTORS = [
   'ytd-guide-renderer',
   '#guide-content',
   'tp-yt-app-drawer',
+  'ytd-browse',
+  'ytd-two-column-browse-results-renderer',
+  'ytd-rich-grid-renderer',
+  '#header.ytd-rich-grid-renderer',
+  '#primary.ytd-two-column-browse-results-renderer',
   'ytd-feed-filter-chip-bar-renderer',
+  '#chips-wrapper.ytd-feed-filter-chip-bar-renderer',
+  '#chips-container.ytd-feed-filter-chip-bar-renderer',
   'ytd-chip-cloud-renderer',
   'yt-chip-cloud-renderer',
   '#chips-wrapper',
   '#chips',
+  '#chips-content',
+  '#left-arrow.ytd-chip-cloud-renderer',
+  '#right-arrow.ytd-chip-cloud-renderer',
   '#scroll-container.ytd-chip-cloud-renderer',
   '#contents.ytd-chip-cloud-renderer'
+].join(', ');
+
+const YOUTUBE_MENU_SURFACE_SELECTORS = [
+  'ytd-popup-container',
+  'ytd-multi-page-menu-renderer',
+  'ytd-menu-popup-renderer',
+  'ytd-account-section-list-renderer',
+  'ytd-active-account-header-renderer',
+  'tp-yt-paper-dialog',
+  'tp-yt-paper-listbox'
+].join(', ');
+
+const YOUTUBE_MENU_ROW_SELECTORS = [
+  'tp-yt-paper-item',
+  'ytd-compact-link-renderer',
+  'ytd-account-item-renderer',
+  'ytd-menu-service-item-renderer',
+  'a.yt-simple-endpoint.ytd-compact-link-renderer'
+].join(', ');
+
+const YOUTUBE_CHROME_PANEL_SELECTORS = [
+  'ytd-masthead',
+  '#masthead-container',
+  'ytd-guide-renderer',
+  'ytd-mini-guide-renderer',
+  '#guide',
+  '#guide-content',
+  '#guide-inner-content',
+  '#sections.ytd-guide-renderer',
+  'tp-yt-app-drawer',
+  'ytd-feed-filter-chip-bar-renderer',
+  '#chips-wrapper.ytd-feed-filter-chip-bar-renderer',
+  '#chips-container.ytd-feed-filter-chip-bar-renderer',
+  'ytd-chip-cloud-renderer',
+  'yt-chip-cloud-renderer',
+  '#chips-wrapper',
+  '#chips',
+  '#chips-content'
+].join(', ');
+
+const YOUTUBE_CONTENT_PANEL_SELECTORS = [
+  'ytd-rich-item-renderer',
+  'ytd-rich-grid-media',
+  'ytd-rich-grid-row',
+  'ytd-video-renderer',
+  'ytd-compact-video-renderer',
+  'ytd-playlist-renderer',
+  'ytd-channel-renderer',
+  'ytd-watch-metadata',
+  'ytd-watch-next-secondary-results-renderer',
+  '#details.ytd-rich-grid-media',
+  '#meta.ytd-rich-grid-media',
+  '#dismissible.ytd-video-renderer',
+  '#metadata.ytd-video-renderer',
+  '#content.ytd-rich-item-renderer',
+  '#contents.ytd-rich-grid-renderer',
+  '#primary-inner',
+  '#secondary-inner'
+].join(', ');
+
+const YOUTUBE_CONTENT_TEXT_SELECTORS = [
+  '#video-title',
+  '#video-title-link',
+  '#title',
+  '#metadata-line',
+  '#channel-name',
+  'ytd-video-meta-block',
+  'yt-formatted-string.ytd-video-meta-block',
+  'h3',
+  '.title',
+  '.metadata',
+  '.byline'
+].join(', ');
+
+const CHATGPT_GRADIENT_SELECTORS = [
+  'body',
+  '#__next',
+  'main',
+  '[role="main"]',
+  '[class*="bg-token-main-surface-primary" i]',
+  '[class*="bg-token-bg-primary" i]',
+  '[class*="composer-parent" i]',
+  '[class*="thread" i]',
+  '[class*="conversation" i]'
+].join(', ');
+
+const CHATGPT_NAV_GRADIENT_SELECTORS = [
+  'header',
+  'aside',
+  'nav',
+  '[data-testid="sidebar"]',
+  '[class*="bg-token-sidebar-surface-primary" i]',
+  '[class*="bg-token-sidebar-surface-secondary" i]',
+  '[class*="sticky" i][class*="top" i]'
 ].join(', ');
 
 const WEBSITE_ADAPTERS = [
@@ -1288,6 +1435,14 @@ function lowerIdentity(el) {
   return `${el.tagName || ''} ${el.id || ''} ${el.className || ''} ${el.getAttribute?.('role') || ''}`.toLowerCase();
 }
 
+function currentSiteId() {
+  const host = typeof location !== 'undefined' ? location.hostname.toLowerCase() : '';
+  if (/(^|\.)youtube\.com$/.test(host)) return 'youtube';
+  if (host === 'chatgpt.com' || host === 'chat.openai.com') return 'chatgpt';
+  if (/(^|\.)google\./.test(host)) return 'google';
+  return 'generic';
+}
+
 function isHidden(style) {
   return style.display === 'none' || style.visibility === 'hidden' || Number.parseFloat(style.opacity || '1') <= 0.02;
 }
@@ -1364,6 +1519,16 @@ function isButtonLike(el) {
     /\b(button|btn|chip|pill|tab|filter|toggle|cta|primary)\b/.test(id);
 }
 
+function isInlineIconElement(el) {
+  return el.matches('yt-icon, ytmusic-icon, tp-yt-iron-icon, iron-icon, .material-icons, .material-symbols-outlined');
+}
+
+function blocksBackgroundRole(el) {
+  if (isInlineIconElement(el)) return true;
+  if (!TEXT_BACKGROUND_BLOCKED_TAGS.has(el.tagName)) return false;
+  return !isFormControl(el) && !isButtonLike(el) && !el.matches('a, [role="link"]');
+}
+
 function isSecondaryControl(el) {
   const id = lowerIdentity(el);
   return /\b(secondary|ghost|outline|chip|pill|filter|tab)\b/.test(id);
@@ -1395,6 +1560,7 @@ function isStatusElement(el) {
 function backgroundRoleForElement(el, style) {
   if (el === document.documentElement) return 'deepest';
   if (el === document.body) return 'page';
+  if (blocksBackgroundRole(el)) return null;
   if (isMenuRegion(el)) return isElevatedSurface(el) ? 'elevated' : 'menu';
   if (isFormControl(el)) return 'input';
   if (isButtonLike(el)) {
@@ -1568,6 +1734,7 @@ function setMappedRole(el, kind, role, theme, options) {
 
   const intensity = Utilities.clamp(options?.themeIntensity ?? 100, 0, 100) / 100;
   if (kind === 'background') {
+    if (blocksBackgroundRole(el)) return;
     if (hasBackgroundImage(style)) return;
     setThemeAttribute(el, 'data-lcbc-bg-role', role);
     if (intensity < 0.995) {
@@ -1709,6 +1876,7 @@ function buildThemeCss(theme, options) {
   --lcbc-button-text: ${t.buttonText};
   --lcbc-secondary-button-bg: ${t.secondaryButtonBackground};
   --lcbc-secondary-button-text: ${t.secondaryButtonText};
+  --lcbc-youtube-logo-text: ${t.isDark ? '#FFFFFF' : '#0B1220'};
   --lcbc-link: ${t.link};
   --lcbc-link-hover: ${t.linkHover};
   --lcbc-success: ${t.success};
@@ -1821,6 +1989,68 @@ function buildThemeCss(theme, options) {
   opacity: 1 !important;
 }
 
+:root[${THEME_ATTR}] :where(#left-arrow.ytd-chip-cloud-renderer, #right-arrow.ytd-chip-cloud-renderer)::before,
+:root[${THEME_ATTR}] :where(#left-arrow.ytd-chip-cloud-renderer, #right-arrow.ytd-chip-cloud-renderer)::after {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MENU_SURFACE_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+  border-color: var(--lcbc-border) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MENU_SURFACE_SELECTORS}) :where([data-lcbc-bg-role], yt-formatted-string, span, #label, #text, yt-icon, ytmusic-icon, tp-yt-iron-icon, iron-icon) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MENU_ROW_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--lcbc-primary-text) !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MENU_ROW_SELECTORS}) :where([data-lcbc-bg-role], yt-formatted-string, span, #label, #text, yt-icon, ytmusic-icon, tp-yt-iron-icon, iron-icon) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MENU_ROW_SELECTORS}) :where(yt-icon, ytmusic-icon, tp-yt-iron-icon, iron-icon, svg, svg *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="chatgpt"] :where(${CHATGPT_GRADIENT_SELECTORS}, ${CHATGPT_NAV_GRADIENT_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="chatgpt"] :where(${CHATGPT_GRADIENT_SELECTORS}, ${CHATGPT_NAV_GRADIENT_SELECTORS}) :where(a, button, [role="button"], [role="tab"], [aria-label]:not(input):not(textarea), span, p, div, h1, h2, h3, small, [class*="text-token-text" i]) {
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="chatgpt"] :where(${CHATGPT_GRADIENT_SELECTORS}, ${CHATGPT_NAV_GRADIENT_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
 :root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}) {
   background-color: transparent !important;
   background-image: var(--lcbc-screen-gradient) !important;
@@ -1837,12 +2067,85 @@ function buildThemeCss(theme, options) {
   box-shadow: 0 0 0 1px var(--lcbc-border), 0 10px 28px var(--lcbc-shadow) !important;
 }
 
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_SEARCH_SHELL_SELECTORS}) {
+  background:
+    linear-gradient(var(--lcbc-input-bg), var(--lcbc-input-bg)) padding-box,
+    var(--lcbc-screen-gradient) border-box !important;
+  border: 2px solid transparent !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px var(--lcbc-strong-border), 0 10px 28px var(--lcbc-shadow) !important;
+  color: #0B1220 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_SEARCH_SHELL_SELECTORS}) :where(input, textarea),
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(input[name="q"], textarea[name="q"]) {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #0B1220 !important;
+  -webkit-text-fill-color: #0B1220 !important;
+  caret-color: var(--lcbc-strong-accent) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_SEARCH_SHELL_SELECTORS}) :where(a, button, [role="button"], [aria-label]:not(input):not(textarea), span, div) {
+  color: #0B1220 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_SEARCH_SHELL_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: #0B1220 !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
 :root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}, ${GOOGLE_SEARCHBOX_SELECTORS}) :where(a, button, [role="button"], [aria-label]:not(input):not(textarea), span, div) {
   color: inherit !important;
 }
 
 :root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}, ${GOOGLE_SEARCHBOX_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
   color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_LOGO_SELECTORS}) {
+  color: revert !important;
+  background-color: transparent !important;
+  background-image: revert !important;
+  filter: none !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_LOGO_SELECTORS}) :where(svg, svg *, path, circle, rect, line, polyline, polygon) {
+  color: revert !important;
+  fill: revert !important;
+  stroke: revert !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) {
+  background:
+    linear-gradient(var(--lcbc-surface), var(--lcbc-elevated-surface)) padding-box,
+    var(--lcbc-screen-gradient) border-box !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 10px var(--lcbc-shadow) !important;
+  color: #0B1220 !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where(a, button, span, div, p, small) {
+  color: #0B1220 !important;
+  -webkit-text-fill-color: #0B1220 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: #0B1220 !important;
   fill: currentColor !important;
   stroke: currentColor !important;
   opacity: 1 !important;
@@ -2039,6 +2342,80 @@ function buildThemeCss(theme, options) {
 }
 
 ${buildWebsiteAdapterCss()}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHROME_PANEL_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+  border-color: var(--lcbc-border) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHROME_PANEL_SELECTORS}) :where(a:not(#logo), button, [role="button"], [role="tab"], [aria-label]:not(input):not(textarea), span, yt-formatted-string, tp-yt-paper-item, ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer) {
+  color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHROME_PANEL_SELECTORS}) :where(yt-icon:not(#logo-icon), yt-icon:not(#logo-icon) *, tp-yt-iron-icon, tp-yt-iron-icon *, iron-icon, iron-icon *, svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CONTENT_PANEL_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CONTENT_PANEL_SELECTORS}) :where([data-lcbc-bg-role], ${YOUTUBE_CONTENT_TEXT_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CONTENT_PANEL_SELECTORS}) :where(${YOUTUBE_CONTENT_TEXT_SELECTORS}) {
+  color: var(--lcbc-primary-text) !important;
+  -webkit-text-fill-color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CONTENT_PANEL_SELECTORS}) :where(#metadata-line, #channel-name, ytd-video-meta-block, yt-formatted-string.ytd-video-meta-block, .metadata, .byline) {
+  color: var(--lcbc-secondary-text) !important;
+  -webkit-text-fill-color: var(--lcbc-secondary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) {
+  color: var(--lcbc-youtube-logo-text) !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where(svg, svg *, yt-icon, yt-icon *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-youtube-logo-text) !important;
+  fill: currentColor !important;
+  stroke: revert !important;
+  filter: none !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i]) {
+  color: #ff0033 !important;
+  fill: #ff0033 !important;
+  stroke: revert !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ffffff" i], [fill="#fff" i], [fill="white" i]) {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: revert !important;
+}
 `;
 }
 
@@ -2063,6 +2440,7 @@ const ThemeEngine = {
   THEME_MAP,
   THEME_STYLE_ID,
   THEME_ATTR,
+  SITE_ATTR,
   WEBSITE_ADAPTERS,
   buildTheme,
   getReadableTextColor,
@@ -2086,6 +2464,7 @@ const ThemeEngine = {
     style.textContent = buildThemeCss(theme, activeOptions);
     document.documentElement.appendChild(style);
     document.documentElement.setAttribute(THEME_ATTR, theme.id || 'custom');
+    document.documentElement.setAttribute(SITE_ATTR, currentSiteId());
 
     applySemanticTheme(theme, activeOptions);
     observeDynamicContent();
@@ -2104,6 +2483,7 @@ const ThemeEngine = {
     const existing = document.getElementById(THEME_STYLE_ID);
     if (existing) existing.remove();
     document.documentElement.removeAttribute(THEME_ATTR);
+    document.documentElement.removeAttribute(SITE_ATTR);
   },
 
   isApplied() {
