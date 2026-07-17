@@ -708,6 +708,22 @@ const YOUTUBE_SELECTED_CHIP_SELECTORS = [
   '.ytChipShapeChip[selected]'
 ].join(', ');
 
+const YOUTUBE_TOP_GRADIENT_SELECTORS = [
+  'ytd-masthead',
+  '#masthead-container',
+  'ytd-mini-guide-renderer',
+  'ytd-guide-renderer',
+  '#guide-content',
+  'tp-yt-app-drawer',
+  'ytd-feed-filter-chip-bar-renderer',
+  'ytd-chip-cloud-renderer',
+  'yt-chip-cloud-renderer',
+  '#chips-wrapper',
+  '#chips',
+  '#scroll-container.ytd-chip-cloud-renderer',
+  '#contents.ytd-chip-cloud-renderer'
+].join(', ');
+
 const WEBSITE_ADAPTERS = [
   {
     id: 'generic',
@@ -1784,6 +1800,25 @@ function buildThemeCss(theme, options) {
   background-color: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_TOP_GRADIENT_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_TOP_GRADIENT_SELECTORS}) :where(a, button, [role="button"], [aria-label]:not(input):not(textarea), span, yt-formatted-string, tp-yt-paper-item) {
+  color: inherit !important;
+}
+
+:root[${THEME_ATTR}] :where(${YOUTUBE_TOP_GRADIENT_SELECTORS}) :where(yt-icon, tp-yt-iron-icon, iron-icon, svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
 }
 
 :root[${THEME_ATTR}] :where(${GOOGLE_HEADER_SELECTORS}) {
