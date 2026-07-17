@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot Preview — Let's Capture, Boost &amp; Colour</title>
+<link rel="stylesheet" href="preview.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <img src="../assets/icon32.png" alt="">
+    <span>Let's Capture, Boost &amp; Colour</span>
+  </div>
+  <div class="topbar-actions">
+    <button id="zoomOutBtn" class="icon-btn" title="Zoom out">−</button>
+    <span id="zoomLevel" class="zoom-level">100%</span>
+    <button id="zoomInBtn" class="icon-btn" title="Zoom in">+</button>
+    <button id="fitScreenBtn" class="btn btn-ghost">Fit to screen</button>
+    <button id="actualSizeBtn" class="btn btn-ghost">Actual size</button>
+  </div>
+</div>
+
+<main class="content">
+  <section class="viewer" id="viewer">
+    <div id="emptyState" class="empty-state">No screenshot to preview yet.</div>
+    <div id="imageWrap" class="image-wrap hidden">
+      <img id="previewImage" alt="Captured screenshot preview">
+    </div>
+    <div id="partsWrap" class="parts-wrap hidden"></div>
+  </section>
+
+  <aside class="sidebar">
+    <div class="card">
+      <h2 class="card-title">Details</h2>
+      <p class="detail-row"><span>Dimensions</span><span id="detailDimensions">—</span></p>
+      <p class="detail-row"><span>Estimated size</span><span id="detailSize">—</span></p>
+      <p class="detail-row"><span>Capture type</span><span id="detailType">—</span></p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Filename</h2>
+      <input type="text" id="filenameInput" class="text-input">
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Download</h2>
+      <button id="downloadPngBtn" class="btn btn-primary btn-block">Download PNG</button>
+      <div class="jpeg-row">
+        <button id="downloadJpegBtn" class="btn btn-secondary">Download JPEG</button>
+        <label class="quality-label">
+          Quality
+          <input type="range" id="jpegQuality" min="10" max="100" value="90">
+          <span id="jpegQualityValue">90%</span>
+        </label>
+      </div>
+      <button id="copyImageBtn" class="btn btn-ghost btn-block">Copy image</button>
+      <button id="printBtn" class="btn btn-ghost btn-block">Print</button>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Actions</h2>
+      <button id="retakeBtn" class="btn btn-ghost btn-block">Retake</button>
+      <button id="deleteBtn" class="btn btn-ghost btn-block">Delete</button>
+      <button id="closeBtn" class="btn btn-ghost btn-block">Close</button>
+    </div>
+
+    <p class="status-line" id="statusLine" role="status" aria-live="polite"></p>
+  </aside>
+</main>
+<script src="../utilities.js"></script>
+<script src="preview.js"></script>
+</body>
+</html>

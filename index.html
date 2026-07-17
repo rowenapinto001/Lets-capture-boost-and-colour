@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Capture + Boost + Colour</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="Image preview workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Capture + Boost + Colour</p>
+            <h1>Photo colour bench</h1>
+          </div>
+          <div class="topbar-actions">
+            <button id="openCamera" class="secondary-button" type="button">Camera</button>
+            <label class="secondary-button file-button" for="imageUpload">Upload</label>
+            <input id="imageUpload" type="file" accept="image/*" />
+            <button id="downloadImage" class="primary-button" type="button">Export PNG</button>
+          </div>
+        </header>
+
+        <div class="preview-stage">
+          <canvas id="photoCanvas" width="1280" height="860" aria-label="Edited image preview"></canvas>
+          <div id="emptyState" class="empty-state" hidden>
+            <strong>Load a frame to begin.</strong>
+            <span>Use the camera or upload an image.</span>
+          </div>
+        </div>
+
+        <div id="cameraDock" class="camera-dock" hidden>
+          <video id="cameraStream" autoplay playsinline muted></video>
+          <div class="camera-actions">
+            <button id="captureFrame" class="primary-button" type="button">Capture</button>
+            <button id="closeCamera" class="secondary-button" type="button">Close</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="control-panel" aria-label="Image controls">
+        <section class="panel-section">
+          <div class="section-head">
+            <h2>Boost</h2>
+            <button id="resetControls" class="ghost-button" type="button">Reset</button>
+          </div>
+          <div class="slider-list">
+            <label>
+              <span>Exposure <output id="exposureValue">0</output></span>
+              <input id="exposure" type="range" min="-100" max="100" value="0" />
+            </label>
+            <label>
+              <span>Contrast <output id="contrastValue">8</output></span>
+              <input id="contrast" type="range" min="-100" max="100" value="8" />
+            </label>
+            <label>
+              <span>Clarity <output id="clarityValue">10</output></span>
+              <input id="clarity" type="range" min="0" max="80" value="10" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Colour</h2>
+          <div class="slider-list">
+            <label>
+              <span>Saturation <output id="saturationValue">18</output></span>
+              <input id="saturation" type="range" min="-100" max="100" value="18" />
+            </label>
+            <label>
+              <span>Warmth <output id="warmthValue">8</output></span>
+              <input id="warmth" type="range" min="-100" max="100" value="8" />
+            </label>
+            <label>
+              <span>Tint <output id="tintValue">0</output></span>
+              <input id="tint" type="range" min="-100" max="100" value="0" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2>Looks</h2>
+          <div class="preset-grid" role="list">
+            <button class="preset active" type="button" data-preset="fresh">
+              <span class="swatch fresh"></span>
+              Fresh
+            </button>
+            <button class="preset" type="button" data-preset="cinema">
+              <span class="swatch cinema"></span>
+              Cinema
+            </button>
+            <button class="preset" type="button" data-preset="chrome">
+              <span class="swatch chrome"></span>
+              Chrome
+            </button>
+            <button class="preset" type="button" data-preset="soft">
+              <span class="swatch soft"></span>
+              Soft
+            </button>
+          </div>
+        </section>
+
+        <section class="panel-section compact">
+          <h2>Frame</h2>
+          <dl class="meta-list">
+            <div>
+              <dt>Source</dt>
+              <dd id="sourceMeta">Sample</dd>
+            </div>
+            <div>
+              <dt>Size</dt>
+              <dd id="sizeMeta">1280 x 860</dd>
+            </div>
+          </dl>
+        </section>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
