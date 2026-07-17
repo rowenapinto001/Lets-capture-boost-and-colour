@@ -688,13 +688,23 @@ const GOOGLE_RESULT_CHIP_SELECTORS = [
   '#search [role="button"]',
   '#rcnt [role="tab"]',
   '#rcnt [role="button"]',
+  '#rcnt button',
+  '#rcnt a[role="button"]',
   '.kp-wholepage [role="tab"]',
   '.kp-wholepage [role="button"]',
+  '.kp-wholepage button',
+  '.kp-wholepage a[role="button"]',
   '.wDYxhc [role="tab"]',
   '.wDYxhc [role="button"]',
+  '.wDYxhc button',
+  '.wDYxhc a[role="button"]',
   '.cUnQKe [role="tab"]',
   '.cUnQKe [role="button"]',
+  '.cUnQKe button',
+  '.cUnQKe a[role="button"]',
+  '[jscontroller][role="button"]',
   '[aria-label="Overview"]',
+  '[aria-label*="Overview" i]',
   '[aria-label*="Usage example" i]',
   '[aria-label*="Similar" i][aria-label*="opposite" i]',
   '[data-name="Overview"]',
@@ -727,8 +737,16 @@ const YOUTUBE_LOGO_SELECTORS = [
   'ytd-topbar-logo-renderer',
   'ytd-logo',
   'a#logo',
+  '#logo',
+  '#logo a',
   '#logo-icon',
-  '#logo-icon-container'
+  '#logo-icon-container',
+  '#logo-icon svg',
+  '#logo-icon svg *',
+  'ytd-topbar-logo-renderer yt-icon',
+  'ytd-topbar-logo-renderer yt-icon *',
+  'ytd-topbar-logo-renderer [id*="logo" i]',
+  'ytd-topbar-logo-renderer [class*="logo" i]'
 ].join(', ');
 
 const YOUTUBE_MUSIC_LOGO_SELECTORS = [
@@ -915,6 +933,32 @@ const GITHUB_GRADIENT_SURFACE_SELECTORS = [
   '[class*="color-bg-subtle" i]',
   '[class*="color-bg-inset" i]',
   '[class*="color-bg-overlay" i]'
+].join(', ');
+
+const GITHUB_BORDERED_PANEL_SELECTORS = [
+  '.feed-right-sidebar .Box',
+  '.feed-right-sidebar > *',
+  '.dashboard-sidebar .Box',
+  '.dashboard-sidebar > *',
+  '.Layout-sidebar .Box',
+  '.Layout-sidebar > *',
+  '.Box.color-bg-default',
+  '.Box.color-bg-subtle',
+  '.color-bg-overlay',
+  '.color-bg-default.border',
+  '.color-bg-subtle.border'
+].join(', ');
+
+const GITHUB_REPOSITORY_BOUNDARY_SELECTORS = [
+  '.feed-main .Box',
+  '.feed-main .Box-row',
+  '.dashboard-main .Box',
+  '.dashboard-main .Box-row',
+  '.application-main .Box-row',
+  '.js-feed-item',
+  '[data-testid="feed-item"]',
+  '[class*="feed-item" i]',
+  '[class*="repository" i][class*="item" i]'
 ].join(', ');
 
 const WEBSITE_ADAPTERS = [
@@ -1882,6 +1926,11 @@ function buildWebsiteAdapterCss() {
 
 function buildThemeCss(theme, options) {
   const t = adjustThemeForOptions(resolveThemeForDisplayMode(theme, options), options);
+  const youtubeChipBackground = t.isDark ? Utilities.mixColors(t.elevatedSurface, t.accent, 0.36) : t.secondaryButtonBackground;
+  const youtubeChipBorder = t.isDark ? Utilities.mixColors(t.strongBorder, t.brightAccent, 0.36) : t.border;
+  const googleChipBackground = t.isDark ? Utilities.mixColors('#FFFFFF', t.accent, 0.08) : t.surface;
+  const googleChipBackground2 = t.isDark ? Utilities.mixColors('#FFFFFF', t.accent, 0.14) : t.elevatedSurface;
+  const googleChipBorder = t.isDark ? Utilities.mixColors('#FFFFFF', t.accent, 0.28) : t.border;
   return `
 :root[${THEME_ATTR}] {
   color-scheme: ${t.isDark ? 'dark' : 'light'};
@@ -1924,6 +1973,13 @@ function buildThemeCss(theme, options) {
   --lcbc-secondary-button-bg: ${t.secondaryButtonBackground};
   --lcbc-secondary-button-text: ${t.secondaryButtonText};
   --lcbc-youtube-logo-text: ${t.isDark ? '#FFFFFF' : '#0B1220'};
+  --lcbc-youtube-chip-bg: ${youtubeChipBackground};
+  --lcbc-youtube-chip-border: ${youtubeChipBorder};
+  --lcbc-youtube-chip-text: ${t.primaryText};
+  --lcbc-google-chip-bg: ${googleChipBackground};
+  --lcbc-google-chip-bg-2: ${googleChipBackground2};
+  --lcbc-google-chip-border: ${googleChipBorder};
+  --lcbc-google-chip-text: #0B1220;
   --lcbc-link: ${t.link};
   --lcbc-link-hover: ${t.linkHover};
   --lcbc-success: ${t.success};
@@ -2175,24 +2231,25 @@ function buildThemeCss(theme, options) {
 
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) {
   background:
-    linear-gradient(var(--lcbc-surface), var(--lcbc-elevated-surface)) padding-box,
+    linear-gradient(var(--lcbc-google-chip-bg), var(--lcbc-google-chip-bg-2)) padding-box,
     var(--lcbc-screen-gradient) border-box !important;
   border: 1px solid transparent !important;
   border-radius: 999px !important;
   box-shadow: 0 2px 10px var(--lcbc-shadow) !important;
-  color: #0B1220 !important;
+  color: var(--lcbc-google-chip-text) !important;
+  -webkit-text-fill-color: var(--lcbc-google-chip-text) !important;
   opacity: 1 !important;
 }
 
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where(a, button, span, div, p, small) {
-  color: #0B1220 !important;
-  -webkit-text-fill-color: #0B1220 !important;
+  color: var(--lcbc-google-chip-text) !important;
+  -webkit-text-fill-color: var(--lcbc-google-chip-text) !important;
   background-color: transparent !important;
   background-image: none !important;
 }
 
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
-  color: #0B1220 !important;
+  color: var(--lcbc-google-chip-text) !important;
   fill: currentColor !important;
   stroke: currentColor !important;
   opacity: 1 !important;
@@ -2421,12 +2478,28 @@ ${buildWebsiteAdapterCss()}
   opacity: 1 !important;
 }
 
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_BORDERED_PANEL_SELECTORS}) {
+  border: 2px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.38), 0 10px 24px var(--lcbc-shadow) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_REPOSITORY_BOUNDARY_SELECTORS}) {
+  border-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(.feed-main .Box-row + .Box-row, .dashboard-main .Box-row + .Box-row, .application-main .Box-row + .Box-row, .js-feed-item + .js-feed-item) {
+  border-top: 2px solid rgba(255, 255, 255, 0.86) !important;
+}
+
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) {
-  background-color: transparent !important;
-  background-image: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  color: #0B1220 !important;
+  background:
+    linear-gradient(var(--lcbc-google-chip-bg), var(--lcbc-google-chip-bg-2)) padding-box,
+    var(--lcbc-screen-gradient) border-box !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.14) !important;
+  color: var(--lcbc-google-chip-text) !important;
+  -webkit-text-fill-color: var(--lcbc-google-chip-text) !important;
   opacity: 1 !important;
 }
 
@@ -2434,12 +2507,12 @@ ${buildWebsiteAdapterCss()}
   background-color: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
-  color: #0B1220 !important;
-  -webkit-text-fill-color: #0B1220 !important;
+  color: var(--lcbc-google-chip-text) !important;
+  -webkit-text-fill-color: var(--lcbc-google-chip-text) !important;
 }
 
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
-  color: #0B1220 !important;
+  color: var(--lcbc-google-chip-text) !important;
   fill: currentColor !important;
   stroke: currentColor !important;
   opacity: 1 !important;
@@ -2485,6 +2558,35 @@ ${buildWebsiteAdapterCss()}
   opacity: 1 !important;
 }
 
+${t.isDark ? `
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHIP_SELECTORS}),
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHIP_SELECTORS}):hover,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHIP_SELECTORS}):focus,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHIP_SELECTORS}):focus-visible,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}),
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}):hover,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}):focus,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}):focus-visible {
+  background-color: var(--lcbc-youtube-chip-bg) !important;
+  background-image: none !important;
+  color: var(--lcbc-youtube-chip-text) !important;
+  border-color: var(--lcbc-youtube-chip-border) !important;
+  box-shadow: 0 1px 3px var(--lcbc-shadow) !important;
+  opacity: 1 !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHIP_SELECTORS}) :where(a, span, yt-formatted-string, #text),
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}) :where(a, span, yt-formatted-string, #text) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--lcbc-youtube-chip-text) !important;
+  -webkit-text-fill-color: var(--lcbc-youtube-chip-text) !important;
+  transition: none !important;
+}
+` : ''}
+
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CONTENT_PANEL_SELECTORS}) {
   background-color: transparent !important;
   background-image: none !important;
@@ -2508,25 +2610,40 @@ ${buildWebsiteAdapterCss()}
   -webkit-text-fill-color: var(--lcbc-secondary-text) !important;
 }
 
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"],
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytd-app,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytd-masthead,
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytd-topbar-logo-renderer {
+  --yt-spec-wordmark-text: var(--lcbc-youtube-logo-text) !important;
+  --yt-spec-brand-icon-active: #ff0033 !important;
+  --yt-spec-brand-icon-inactive: #ff0033 !important;
+}
+
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) {
   color: var(--lcbc-youtube-logo-text) !important;
+  -webkit-text-fill-color: var(--lcbc-youtube-logo-text) !important;
   background-color: transparent !important;
   background-image: none !important;
   filter: none !important;
   opacity: 1 !important;
   mix-blend-mode: normal !important;
+  visibility: visible !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) *,
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where(svg, svg *, yt-icon, yt-icon *, path, circle, rect, line, polyline, polygon) {
   color: var(--lcbc-youtube-logo-text) !important;
+  -webkit-text-fill-color: var(--lcbc-youtube-logo-text) !important;
   fill: currentColor !important;
   stroke: revert !important;
   filter: none !important;
   opacity: 1 !important;
   mix-blend-mode: normal !important;
+  visibility: visible !important;
 }
 
-:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i]) {
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i], [fill*="brand-icon" i]) {
   color: #ff0033 !important;
   fill: #ff0033 !important;
   stroke: revert !important;
