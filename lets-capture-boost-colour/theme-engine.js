@@ -871,6 +871,52 @@ const CHATGPT_NAV_GRADIENT_SELECTORS = [
   '[class*="sticky" i][class*="top" i]'
 ].join(', ');
 
+const CHATGPT_MAIN_SURFACE_SELECTORS = [
+  'body',
+  '#__next',
+  'main',
+  '[role="main"]',
+  'main > div',
+  'main > div > div',
+  '[class*="bg-token-main-surface-primary" i]',
+  '[class*="bg-token-bg-primary" i]',
+  '[class*="bg-token-main-surface-secondary" i]',
+  '[class*="bg-token-main-surface-tertiary" i]',
+  '[class*="bg-primary" i]',
+  '[class*="bg-white" i]',
+  '[class*="composer-parent" i]',
+  '[class*="thread" i]',
+  '[class*="conversation" i]'
+].join(', ');
+
+const GITHUB_GRADIENT_SURFACE_SELECTORS = [
+  'body',
+  '.application-main',
+  'main',
+  '[data-turbo-body]',
+  '.dashboard',
+  '.dashboard-main',
+  '.dashboard-sidebar',
+  '.feed-main',
+  '.feed-right-sidebar',
+  '.Layout',
+  '.Layout-main',
+  '.Layout-sidebar',
+  '.AppHeader',
+  '.AppHeader-globalBar',
+  '.Header',
+  '[data-testid="app-header"]',
+  '.Box',
+  '.color-bg-default',
+  '.color-bg-subtle',
+  '.color-bg-inset',
+  '.color-bg-overlay',
+  '[class*="color-bg-default" i]',
+  '[class*="color-bg-subtle" i]',
+  '[class*="color-bg-inset" i]',
+  '[class*="color-bg-overlay" i]'
+].join(', ');
+
 const WEBSITE_ADAPTERS = [
   {
     id: 'generic',
@@ -1440,6 +1486,7 @@ function currentSiteId() {
   if (/(^|\.)youtube\.com$/.test(host)) return 'youtube';
   if (host === 'chatgpt.com' || host === 'chat.openai.com') return 'chatgpt';
   if (/(^|\.)google\./.test(host)) return 'google';
+  if (host === 'github.com' || host.endsWith('.github.com')) return 'github';
   return 'generic';
 }
 
@@ -2342,6 +2389,80 @@ function buildThemeCss(theme, options) {
 }
 
 ${buildWebsiteAdapterCss()}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_GRADIENT_SURFACE_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+  border-color: var(--lcbc-border) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_GRADIENT_SURFACE_SELECTORS}) :where([data-lcbc-bg-role], .Box, .color-bg-default, .color-bg-subtle, .color-bg-inset, .color-bg-overlay, [class*="color-bg-default" i], [class*="color-bg-subtle" i], [class*="color-bg-inset" i], [class*="color-bg-overlay" i]) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_GRADIENT_SURFACE_SELECTORS}) :where(h1, h2, h3, h4, h5, h6, p, span, div, summary, label, button, input, textarea, select, [role="button"], [role="link"]) {
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_GRADIENT_SURFACE_SELECTORS}) :where(a) {
+  color: var(--lcbc-link) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="github"] :where(${GITHUB_GRADIENT_SURFACE_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #0B1220 !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where([data-lcbc-bg-role], a, button, span, div, p, small) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #0B1220 !important;
+  -webkit-text-fill-color: #0B1220 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: #0B1220 !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="chatgpt"] :where(${CHATGPT_MAIN_SURFACE_SELECTORS}, ${CHATGPT_NAV_GRADIENT_SELECTORS}) {
+  background-color: transparent !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="chatgpt"] :where(${CHATGPT_MAIN_SURFACE_SELECTORS}, ${CHATGPT_NAV_GRADIENT_SELECTORS}) :where(a, button, [role="button"], [role="tab"], [aria-label]:not(input):not(textarea), span, p, div, h1, h2, h3, small, [class*="text-token-text" i]) {
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="chatgpt"] :where(${CHATGPT_MAIN_SURFACE_SELECTORS}, ${CHATGPT_NAV_GRADIENT_SELECTORS}) :where(svg:not([class*="logo" i]):not([id*="logo" i]), svg:not([class*="logo" i]):not([id*="logo" i]) *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
 
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHROME_PANEL_SELECTORS}) {
   background-color: transparent !important;
