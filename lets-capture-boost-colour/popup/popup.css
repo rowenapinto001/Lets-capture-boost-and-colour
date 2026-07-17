@@ -305,7 +305,7 @@ input:focus-visible {
 }
 
 .display-mode-control {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .control-label {

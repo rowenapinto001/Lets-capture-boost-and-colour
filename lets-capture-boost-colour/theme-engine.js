@@ -80,6 +80,19 @@ function buildTheme(base) {
   t.error = t.error || '#DC2626';
   t.selection = t.selection || Utilities.mixColors(t.accent, '#ffffff', 0.6);
   t.glow = t.glow || rgbaFromHex(t.accent, t.isDark ? 0.34 : 0.18);
+  const lightGradients = t.isDark ? null : buildLightGradients(t);
+  t.screenGradient = t.screenGradient || lightGradients?.screenGradient || 'none';
+  t.headerGradient = t.headerGradient || lightGradients?.headerGradient || 'none';
+  t.sidebarGradient = t.sidebarGradient || lightGradients?.sidebarGradient || 'none';
+  t.surfaceGradient = t.surfaceGradient || lightGradients?.surfaceGradient || 'none';
+  t.cardGradient = t.cardGradient || lightGradients?.cardGradient || 'none';
+  t.menuGradient = t.menuGradient || lightGradients?.menuGradient || 'none';
+  t.inputGradient = t.inputGradient || lightGradients?.inputGradient || 'none';
+  t.selectedGradient = t.selectedGradient || lightGradients?.selectedGradient || 'none';
+  t.buttonGradient = t.buttonGradient || lightGradients?.buttonGradient || t.selectedGradient;
+  if (!t.isDark && lightGradients) {
+    t.buttonText = resolveReadableText(t.selectedBackground, t.buttonText);
+  }
   t.shadow = t.shadow || (t.isDark ? 'rgba(0,0,0,0.6)' : 'rgba(15,23,42,0.12)');
   t.background = t.pageBackground;
   t.active = t.selectedBackground;
@@ -243,6 +256,49 @@ function getThemeBaseColor(theme) {
   return theme.baseColor || theme.accent || theme.strongAccent || theme.secondaryAccent || '#8B5CF6';
 }
 
+function buildLightGradients(theme) {
+  const color = Utilities.isValidHex(getThemeBaseColor(theme)) ? getThemeBaseColor(theme) : '#8B5CF6';
+  const hsl = hexToHsl(color);
+  const accentSat = Utilities.clamp(Math.max(hsl.s, 68), 58, 96);
+  const tintSat = Utilities.clamp(Math.max(hsl.s * 0.42, 24), 22, 58);
+  const strongGlow = hslFromBase(hsl, accentSat, 68);
+  const softGlow = hslFromBase(hsl, Utilities.clamp(accentSat - 6, 58, 92), 78);
+  const paleGlow = hslFromBase(hsl, Utilities.clamp(tintSat + 22, 44, 78), 88);
+  const paleTint = hslFromBase(hsl, Utilities.clamp(tintSat + 10, 28, 68), 95);
+  const surfaceTint = hslFromBase(hsl, Utilities.clamp(tintSat + 12, 30, 70), 98);
+  const pageBackground = theme.pageBackground || '#F8FAFC';
+  const secondaryBackground = theme.secondaryBackground || paleTint;
+  const gradientStart = Utilities.mixColors(pageBackground, color, 0.075);
+  const gradientEnd = Utilities.mixColors(secondaryBackground, color, 0.085);
+  const surface = theme.surface || '#FFFFFF';
+  const elevatedSurface = theme.elevatedSurface || surfaceTint;
+  const sidebarBackground = theme.sidebarBackground || secondaryBackground;
+  const cardBackground = theme.cardBackground || surface;
+  const inputBackground = theme.inputBackground || surface;
+  const menuBackground = theme.menuBackground || elevatedSurface;
+  const hoverBackground = theme.hoverBackground || paleTint;
+  const subtleAccentSurface = theme.subtleAccentSurface || paleTint;
+  const selectedBackground = theme.selectedBackground || hslFromBase(hsl, Utilities.clamp(tintSat + 22, 44, 82), 88);
+  const selectedEnd = theme.hoverBackground || hslFromBase(hsl, Utilities.clamp(tintSat + 10, 30, 70), 94);
+
+  return {
+    screenGradient: [
+      `radial-gradient(circle at 18% 0%, ${rgbaFromHex(strongGlow, 0.38)} 0, transparent 34rem)`,
+      `radial-gradient(circle at 86% 12%, ${rgbaFromHex(softGlow, 0.3)} 0, transparent 32rem)`,
+      `radial-gradient(circle at 50% 56%, ${rgbaFromHex(paleGlow, 0.25)} 0, transparent 44rem)`,
+      `linear-gradient(135deg, ${gradientStart} 0%, ${pageBackground} 46%, ${gradientEnd} 100%)`
+    ].join(', '),
+    headerGradient: `linear-gradient(135deg, ${surface} 0%, ${elevatedSurface} 48%, ${hoverBackground} 100%)`,
+    sidebarGradient: `linear-gradient(180deg, ${sidebarBackground} 0%, ${pageBackground} 100%)`,
+    surfaceGradient: `linear-gradient(145deg, ${surface} 0%, ${elevatedSurface} 58%, ${subtleAccentSurface} 100%)`,
+    cardGradient: `linear-gradient(145deg, ${cardBackground} 0%, ${surfaceTint} 62%, ${surface} 100%)`,
+    menuGradient: `linear-gradient(145deg, ${menuBackground} 0%, ${surfaceTint} 58%, ${surface} 100%)`,
+    inputGradient: `linear-gradient(135deg, ${inputBackground} 0%, ${elevatedSurface} 100%)`,
+    selectedGradient: `linear-gradient(135deg, ${selectedBackground} 0%, ${selectedEnd} 100%)`,
+    buttonGradient: `linear-gradient(135deg, ${selectedBackground} 0%, ${selectedEnd} 100%)`
+  };
+}
+
 function generateDarkTheme(baseColor, options = {}) {
   const color = Utilities.isValidHex(baseColor) ? baseColor : '#8B5CF6';
   const base = options.baseTheme || {};
@@ -261,6 +317,22 @@ function generateDarkTheme(baseColor, options = {}) {
   const softAccent = hslFromBase(hsl, Utilities.clamp(accentSat - 4, 68, 96), 78);
   const selectedBackground = hslFromBase(hsl, Utilities.clamp(accentSat, 72, 100), isAmoled ? 35 : 34);
   const buttonBackground = hslFromBase(hsl, Utilities.clamp(accentSat, 74, 100), isAmoled ? 48 : 46);
+  const gradientLow = hslFromBase(hsl, bgSat, isAmoled ? 4 : 7);
+  const gradientMid = hslFromBase(hsl, surfaceSat, isAmoled ? 9 : 15);
+  const gradientHigh = hslFromBase(hsl, Utilities.clamp(surfaceSat + 10, 50, 82), isAmoled ? 15 : 24);
+  const screenGradient = [
+    `radial-gradient(circle at 20% 0%, ${rgbaFromHex(brightAccent, isAmoled ? 0.34 : 0.3)} 0, transparent 38rem)`,
+    `radial-gradient(circle at 82% 10%, ${rgbaFromHex(accent, isAmoled ? 0.32 : 0.26)} 0, transparent 34rem)`,
+    `radial-gradient(circle at 50% 46%, ${rgbaFromHex(strongAccent, isAmoled ? 0.16 : 0.14)} 0, transparent 42rem)`,
+    `linear-gradient(135deg, ${deepestBackground} 0%, ${pageBackground} 48%, ${gradientLow} 100%)`
+  ].join(', ');
+  const headerGradient = `linear-gradient(135deg, ${hslFromBase(hsl, surfaceSat, isAmoled ? 8 : 13)} 0%, ${gradientHigh} 100%)`;
+  const sidebarGradient = `linear-gradient(180deg, ${hslFromBase(hsl, surfaceSat, isAmoled ? 7 : 12)} 0%, ${hslFromBase(hsl, surfaceSat, isAmoled ? 4.8 : 9)} 100%)`;
+  const surfaceGradient = `linear-gradient(145deg, ${hslFromBase(hsl, surfaceSat, isAmoled ? 5 : 12)} 0%, ${hslFromBase(hsl, surfaceSat, isAmoled ? 8.5 : 17)} 100%)`;
+  const cardGradient = `linear-gradient(145deg, ${hslFromBase(hsl, surfaceSat, isAmoled ? 4.5 : 10.5)} 0%, ${gradientMid} 100%)`;
+  const menuGradient = `linear-gradient(145deg, ${hslFromBase(hsl, surfaceSat, isAmoled ? 7 : 13)} 0%, ${hslFromBase(hsl, surfaceSat, isAmoled ? 10.5 : 19)} 100%)`;
+  const inputGradient = `linear-gradient(135deg, ${hslFromBase(hsl, bgSat, isAmoled ? 3.8 : 8)} 0%, ${hslFromBase(hsl, bgSat, isAmoled ? 6.5 : 12)} 100%)`;
+  const selectedGradient = `linear-gradient(135deg, ${selectedBackground} 0%, ${buttonBackground} 100%)`;
 
   return buildTheme({
     ...base,
@@ -303,6 +375,15 @@ function generateDarkTheme(baseColor, options = {}) {
     link: brightAccent,
     linkHover: softAccent,
     glow: rgbaFromHex(accent, isAmoled ? 0.42 : 0.34),
+    screenGradient,
+    headerGradient,
+    sidebarGradient,
+    surfaceGradient,
+    cardGradient,
+    menuGradient,
+    inputGradient,
+    selectedGradient,
+    buttonGradient: selectedGradient,
     shadow: 'rgba(0, 0, 0, 0.48)',
     isDark: true
   });
@@ -350,6 +431,15 @@ function generateLightTheme(baseColor, options = {}) {
     link: hslFromBase(hsl, accentSat, 42),
     linkHover: hslFromBase(hsl, accentSat, 34),
     glow: rgbaFromHex(color, 0.18),
+    screenGradient: null,
+    headerGradient: null,
+    sidebarGradient: null,
+    surfaceGradient: null,
+    cardGradient: null,
+    menuGradient: null,
+    inputGradient: null,
+    selectedGradient: null,
+    buttonGradient: null,
     shadow: 'rgba(15, 23, 42, 0.12)',
     isDark: false
   });
@@ -426,6 +516,28 @@ const TEXT_TAGS = new Set([
 
 const WEBSITE_ADAPTERS = [
   {
+    id: 'generic',
+    background: {
+      deepest: ['html'],
+      page: ['body', 'main', '[role="main"]', '#root', '#app', '#__next', '#__nuxt', '#page', '#content', '.page', '.main', '.content', '.site', '.layout', '.shell', '.app-shell', '.page-content', '.site-content', '.content-wrapper', '.main-content'],
+      header: ['header', '[role="banner"]', '.header', '.site-header', '.topbar', '.navbar', '.masthead'],
+      sidebar: ['aside', 'nav[aria-label*="side" i]', '.sidebar', '.sidenav', '.side-nav', '.drawer', '.rail'],
+      card: ['article', '.card', '.panel', '.tile', '.result', '.item', '.post', '.entry', '.product', '.listing'],
+      input: ['input:not([type="checkbox"]):not([type="radio"])', 'textarea', 'select', '[role="textbox"]', '[role="searchbox"]'],
+      menu: ['dialog', '[role="dialog"]', '[role="menu"]', '[role="listbox"]', '[popover]', '.menu', '.dropdown', '.popover', '.modal'],
+      selected: ['[aria-selected="true"]', '[aria-pressed="true"]', '.active', '.selected', '[selected]']
+    },
+    text: {
+      primary: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+      muted: ['small', 'time', 'figcaption', '.muted', '.meta', '.metadata', '.caption', '.subtitle'],
+      link: ['a', '[role="link"]']
+    },
+    border: {
+      border: ['header', 'nav', 'aside', 'article', '.card', '.panel', '.menu', '.dropdown', '.modal'],
+      strong: ['[aria-selected="true"]', '[aria-pressed="true"]', '.active', '.selected']
+    }
+  },
+  {
     id: 'youtube',
     background: {
       page: ['ytd-app', 'ytd-browse', 'ytd-page-manager', 'ytd-watch-flexy', '#page-manager', '#content.ytd-app'],
@@ -458,7 +570,44 @@ const WEBSITE_ADAPTERS = [
         '--yt-spec-text-secondary': 'muted',
         '--yt-spec-text-disabled': 'muted',
         '--yt-spec-call-to-action': 'accent',
-        '--yt-spec-brand-button-background': 'button'
+        '--yt-spec-brand-button-background': 'selected'
+      }
+    }
+  },
+  {
+    id: 'chatgpt',
+    background: {
+      page: ['body', '#__next', 'main', '[role="main"]', '[class*="bg-token-main-surface-primary" i]', '[class*="bg-token-bg-primary" i]', '[class*="composer-parent" i]'],
+      header: ['header', '[class*="sticky" i][class*="top" i]'],
+      sidebar: ['aside', 'nav', '[data-testid="sidebar"]', '[class*="bg-token-sidebar-surface-primary" i]', '[class*="bg-token-sidebar-surface-secondary" i]'],
+      surface: ['[class*="bg-token-main-surface-secondary" i]', '[class*="bg-token-main-surface-tertiary" i]'],
+      card: ['[data-testid="conversation-turn"]', '[data-message-author-role]', '.markdown'],
+      input: ['#prompt-textarea', 'textarea', '[contenteditable="true"]', '[data-testid="composer"]', '[class*="composer" i]'],
+      menu: ['[role="dialog"]', '[role="menu"]', '[data-radix-popper-content-wrapper]'],
+      selected: ['[aria-selected="true"]', '[aria-current="page"]', '[data-active="true"]', '[class*="bg-token-sidebar-surface-tertiary" i]']
+    },
+    text: {
+      primary: ['h1', 'h2', 'h3', '[data-message-author-role]', '.markdown'],
+      muted: ['small', '[class*="text-token-text-secondary" i]', '[class*="text-token-text-tertiary" i]'],
+      link: ['a', '[role="link"]']
+    },
+    border: {
+      border: ['header', 'aside', 'nav', '#prompt-textarea', '[data-testid="composer"]', '[role="dialog"]'],
+      strong: ['[aria-selected="true"]', '[aria-current="page"]', '[data-active="true"]']
+    },
+    variables: {
+      'body': {
+        '--main-surface-primary': 'page',
+        '--main-surface-secondary': 'surface',
+        '--main-surface-tertiary': 'secondary',
+        '--sidebar-surface-primary': 'sidebar',
+        '--sidebar-surface-secondary': 'surface',
+        '--sidebar-surface-tertiary': 'selected',
+        '--text-primary': 'primary',
+        '--text-secondary': 'secondary',
+        '--text-tertiary': 'muted',
+        '--border-light': 'border',
+        '--border-medium': 'strong'
       }
     }
   },
@@ -603,6 +752,23 @@ const BORDER_ROLE_VARS = {
   subtle: '--lcbc-subtle-border',
   strong: '--lcbc-strong-border',
   accent: '--lcbc-strong-accent'
+};
+
+const BACKGROUND_ROLE_GRADIENTS = {
+  deepest: '--lcbc-screen-gradient',
+  page: '--lcbc-screen-gradient',
+  secondary: '--lcbc-surface-gradient',
+  header: '--lcbc-header-gradient',
+  sidebar: '--lcbc-sidebar-gradient',
+  surface: '--lcbc-surface-gradient',
+  elevated: '--lcbc-menu-gradient',
+  card: '--lcbc-card-gradient',
+  input: '--lcbc-input-gradient',
+  menu: '--lcbc-menu-gradient',
+  button: '--lcbc-button-gradient',
+  secondaryButton: '--lcbc-surface-gradient',
+  selected: '--lcbc-selected-gradient',
+  hover: '--lcbc-surface-gradient'
 };
 
 const originalInlineStyles = new WeakMap();
@@ -838,7 +1004,7 @@ function isMediaElement(el) {
 
 function isProtectedMediaContext(el, style) {
   if (isMediaElement(el)) return true;
-  if (hasBackgroundImage(style)) return true;
+  if (hasBackgroundImage(style) && !el.hasAttribute('data-lcbc-bg-role')) return true;
   return !!el.closest(MEDIA_SELECTOR) ||
     !!el.closest('.html5-video-player, ytd-player, #movie_player, [class*="video-player" i], [class*="media-player" i], [class*="ytp-" i]');
 }
@@ -1044,7 +1210,7 @@ function applySemanticElement(el, theme, options) {
 
   const protectedMedia = isProtectedMediaContext(el, style);
   if (protectedMedia) {
-    if (isMediaElement(el) || hasBackgroundImage(style)) {
+    if (isMediaElement(el) || (hasBackgroundImage(style) && !el.hasAttribute('data-lcbc-bg-role'))) {
       setInlineStyle(el, 'filter', 'none');
       setInlineStyle(el, 'opacity', '1');
       setInlineStyle(el, 'mix-blend-mode', 'normal');
@@ -1154,15 +1320,24 @@ function applySemanticTheme(theme, options) {
 }
 
 function selectorList(selectors) {
-  return selectors.map(selector => `:root[${THEME_ATTR}] :where(${selector})`).join(',\n');
+  return selectors.map(selector => {
+    const trimmed = selector.trim();
+    return trimmed === 'html' || trimmed === ':root'
+      ? `:root[${THEME_ATTR}]:not([style*="background-image" i])`
+      : `:root[${THEME_ATTR}] :where(${selector}):not([style*="background-image" i])`;
+  }).join(',\n');
 }
 
 function buildRoleCssRules(adapter) {
   const rules = [];
   Object.entries(adapter.background || {}).forEach(([role, selectors]) => {
     const cssVar = BACKGROUND_ROLE_VARS[role];
+    const gradientVar = BACKGROUND_ROLE_GRADIENTS[role];
     if (!cssVar || !selectors.length) return;
-    rules.push(`${selectorList(selectors)} {\n  background-color: var(${cssVar}) !important;\n}`);
+    const gradientLines = gradientVar
+      ? `\n  background-image: var(${gradientVar}) !important;${role === 'deepest' || role === 'page' ? '\n  background-attachment: fixed !important;\n  background-size: cover !important;' : ''}`
+      : '';
+    rules.push(`${selectorList(selectors)} {\n  background-color: var(${cssVar}) !important;${gradientLines}\n}`);
   });
   Object.entries(adapter.text || {}).forEach(([role, selectors]) => {
     const cssVar = TEXT_ROLE_VARS[role];
@@ -1237,6 +1412,15 @@ function buildThemeCss(theme, options) {
   --lcbc-warning: ${t.warning};
   --lcbc-error: ${t.error};
   --lcbc-glow: ${t.glow};
+  --lcbc-screen-gradient: ${t.screenGradient};
+  --lcbc-header-gradient: ${t.headerGradient};
+  --lcbc-sidebar-gradient: ${t.sidebarGradient};
+  --lcbc-surface-gradient: ${t.surfaceGradient};
+  --lcbc-card-gradient: ${t.cardGradient};
+  --lcbc-menu-gradient: ${t.menuGradient};
+  --lcbc-input-gradient: ${t.inputGradient};
+  --lcbc-selected-gradient: ${t.selectedGradient};
+  --lcbc-button-gradient: ${t.buttonGradient};
   --lcbc-shadow: ${t.shadow};
 }
 
@@ -1247,43 +1431,60 @@ function buildThemeCss(theme, options) {
 
 :root[${THEME_ATTR}] [data-lcbc-bg-role="deepest"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-deepest-bg)) !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="page"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-page-bg)) !important;
+  background-image: var(--lcbc-screen-gradient) !important;
+  background-attachment: fixed !important;
+  background-size: cover !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="secondary"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-secondary-bg)) !important;
+  background-image: var(--lcbc-surface-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="header"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-header-bg)) !important;
+  background-image: var(--lcbc-header-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="sidebar"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-sidebar-bg)) !important;
+  background-image: var(--lcbc-sidebar-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="surface"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-surface)) !important;
+  background-image: var(--lcbc-surface-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="elevated"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-elevated-surface)) !important;
+  background-image: var(--lcbc-menu-gradient) !important;
   box-shadow: 0 8px 28px var(--lcbc-shadow) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="card"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-card-bg)) !important;
+  background-image: var(--lcbc-card-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="input"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-input-bg)) !important;
+  background-image: var(--lcbc-input-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="menu"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-menu-bg)) !important;
+  background-image: var(--lcbc-menu-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="button"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-button-bg)) !important;
+  background-image: var(--lcbc-button-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="secondaryButton"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-secondary-button-bg)) !important;
+  background-image: var(--lcbc-surface-gradient) !important;
 }
 :root[${THEME_ATTR}] [data-lcbc-bg-role="selected"] {
   background-color: var(--lcbc-local-bg, var(--lcbc-selected-bg)) !important;
+  background-image: var(--lcbc-selected-gradient) !important;
 }
 
 :root[${THEME_ATTR}] [data-lcbc-text-role="primary"] {

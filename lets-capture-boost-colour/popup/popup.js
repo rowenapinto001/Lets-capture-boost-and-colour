@@ -428,6 +428,14 @@ function setDisplayMode(mode, live) {
   if (live) applyColourOptionsLive();
 }
 
+function displayModeForTheme(theme) {
+  if (!theme) return null;
+  const identity = `${theme.id || ''} ${theme.name || ''}`.toLowerCase();
+  if (identity.includes('amoled')) return 'amoled';
+  if (theme.isDark || theme.category === 'dark') return 'dark';
+  return null;
+}
+
 function getColourOptions() {
   return {
     displayMode: getSelectedDisplayMode(),
@@ -457,6 +465,9 @@ async function applyThemeChoice(themeId) {
 
   const theme = ThemeEngine.getThemeById(themeId, state.customThemes);
   if (!theme) return;
+
+  const impliedDisplayMode = displayModeForTheme(theme);
+  if (impliedDisplayMode) setDisplayMode(impliedDisplayMode, false);
 
   const options = getColourOptions();
   const res = await sendToContent({ type: 'APPLY_THEME', theme, options });
@@ -532,6 +543,16 @@ function initColour() {
   $('optRememberTheme').checked = siteSettings.themeId !== undefined;
   $('optApplyAllSites').checked = !!gs.applyToAllSites;
   $('optDisableSite').checked = siteSettings.colourEnabled === false;
+
+  let correctedDisplayMode = false;
+  if (selectedThemeId && getSelectedDisplayMode() === 'light') {
+    const selectedTheme = ThemeEngine.getThemeById(selectedThemeId, state.customThemes);
+    const impliedDisplayMode = displayModeForTheme(selectedTheme);
+    if (impliedDisplayMode) {
+      setDisplayMode(impliedDisplayMode, false);
+      correctedDisplayMode = true;
+    }
+  }
 
   if (selectedThemeId) {
     const modeBtn = document.querySelector(`#colourModeSegment .segment-btn[data-value="themes"]`);
@@ -646,6 +667,8 @@ function initColour() {
 
   if (!selectedThemeId) {
     setStatus('colourStatusText', 'Original website colours are showing.', false);
+  } else if (correctedDisplayMode && isSupported && !$('optDisableSite').checked) {
+    applyThemeChoice(selectedThemeId);
   }
 }
 
