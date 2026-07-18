@@ -202,9 +202,12 @@ const ScreenshotController = (() => {
     if (activeSelectionCancel) activeSelectionCancel();
 
     return new Promise((resolve, reject) => {
+      const host = document.createElement('div');
       const overlay = document.createElement('div');
       const box = document.createElement('div');
       const hint = document.createElement('div');
+      const shadow = host.attachShadow({ mode: 'closed' });
+      const style = document.createElement('style');
       const previousCursor = document.documentElement.style.cursor;
       const previousUserSelect = document.documentElement.style.userSelect;
       let settled = false;
@@ -214,45 +217,75 @@ const ScreenshotController = (() => {
       let startY = 0;
       let currentRect = null;
 
-      overlay.id = 'lcbc-selection-capture-overlay';
-      overlay.setAttribute('role', 'presentation');
-      overlay.setAttribute('data-lcbc-ignore', '');
-      overlay.style.cssText = [
-        'position: fixed',
-        'inset: 0',
-        'z-index: 2147483647',
-        'cursor: crosshair',
-        'background: rgba(15, 23, 42, 0.18)',
-        'pointer-events: auto',
-        'touch-action: none'
+      host.id = 'lcbc-selection-capture-overlay';
+      host.setAttribute('data-lcbc-ignore', '');
+      host.style.cssText = [
+        'all: initial !important',
+        'position: fixed !important',
+        'inset: 0 !important',
+        'z-index: 2147483647 !important',
+        'display: block !important',
+        'pointer-events: auto !important',
+        'background: transparent !important',
+        'opacity: 1 !important',
+        'filter: none !important',
+        'mix-blend-mode: normal !important'
       ].join(';');
 
-      box.style.cssText = [
-        'position: fixed',
-        'display: none',
-        'border: 2px solid #FFFFFF',
-        'background: rgba(255, 255, 255, 0.08)',
-        'box-shadow: 0 0 0 99999px rgba(15, 23, 42, 0.52), 0 0 0 1px rgba(0, 0, 0, 0.45) inset',
-        'pointer-events: none'
-      ].join(';');
+      style.textContent = `
+        .selection-overlay {
+          all: initial;
+          position: fixed;
+          inset: 0;
+          display: block;
+          box-sizing: border-box;
+          cursor: crosshair;
+          background: rgba(15, 23, 42, 0.10);
+          pointer-events: auto;
+          touch-action: none;
+          user-select: none;
+        }
+        .selection-box {
+          all: initial;
+          position: fixed;
+          display: none;
+          box-sizing: border-box;
+          border: 2px solid #FFFFFF;
+          background: rgba(255, 255, 255, 0.04);
+          box-shadow: 0 0 0 99999px rgba(15, 23, 42, 0.44), 0 0 0 1px rgba(0, 0, 0, 0.48) inset;
+          pointer-events: none;
+        }
+        .selection-hint {
+          all: initial;
+          position: fixed;
+          left: 50%;
+          top: 18px;
+          transform: translateX(-50%);
+          box-sizing: border-box;
+          padding: 8px 12px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.92);
+          color: #FFFFFF;
+          font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          line-height: 1.2;
+          white-space: nowrap;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+          pointer-events: none;
+        }
+      `;
+
+      overlay.className = 'selection-overlay';
+      overlay.setAttribute('role', 'presentation');
+      box.className = 'selection-box';
 
       hint.textContent = 'Drag to select area. Esc cancels.';
-      hint.style.cssText = [
-        'position: fixed',
-        'left: 50%',
-        'top: 18px',
-        'transform: translateX(-50%)',
-        'padding: 8px 12px',
-        'border-radius: 999px',
-        'background: rgba(15, 23, 42, 0.88)',
-        'color: #FFFFFF',
-        'font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        'box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28)',
-        'pointer-events: none'
-      ].join(';');
+      hint.className = 'selection-hint';
 
       overlay.appendChild(box);
       overlay.appendChild(hint);
+      shadow.appendChild(style);
+      shadow.appendChild(overlay);
 
       const clampToViewport = (value, max) => Math.min(Math.max(0, value), max);
 
@@ -279,7 +312,7 @@ const ScreenshotController = (() => {
         overlay.removeEventListener('pointercancel', onCancel, true);
         document.documentElement.style.cursor = previousCursor;
         document.documentElement.style.userSelect = previousUserSelect;
-        overlay.remove();
+        host.remove();
         activeSelectionCancel = null;
       };
 
@@ -339,7 +372,7 @@ const ScreenshotController = (() => {
       overlay.addEventListener('pointerup', onPointerUp, true);
       overlay.addEventListener('pointercancel', onCancel, true);
       document.addEventListener('keydown', onKeyDown, true);
-      document.documentElement.appendChild(overlay);
+      document.documentElement.appendChild(host);
     });
   }
 

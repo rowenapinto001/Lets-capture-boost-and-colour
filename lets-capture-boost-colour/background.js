@@ -12,6 +12,35 @@ const INJECT_FILES = [
 ];
 
 const lastCaptureTime = new Map(); // windowId -> timestamp, to respect capture rate limits
+let lastSupportedPageTabId = null;
+
+function rememberSupportedPageTab(tab) {
+  if (tab?.id && isSupportedTabUrl(tab.url)) {
+    lastSupportedPageTabId = tab.id;
+  }
+}
+
+async function getSidePanelPageTab() {
+  const [focusedTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (focusedTab && isSupportedTabUrl(focusedTab.url)) {
+    rememberSupportedPageTab(focusedTab);
+    return focusedTab;
+  }
+
+  if (lastSupportedPageTabId) {
+    try {
+      const rememberedTab = await chrome.tabs.get(lastSupportedPageTabId);
+      if (isSupportedTabUrl(rememberedTab.url)) return rememberedTab;
+    } catch (error) {
+      lastSupportedPageTabId = null;
+    }
+  }
+
+  const activeTabs = await chrome.tabs.query({ active: true });
+  const fallbackTab = activeTabs.find(tab => isSupportedTabUrl(tab.url));
+  if (fallbackTab) rememberSupportedPageTab(fallbackTab);
+  return fallbackTab || null;
+}
 
 async function configureSidePanel() {
   if (!chrome.sidePanel) return;
@@ -38,11 +67,23 @@ chrome.runtime.onStartup.addListener(() => {
 
 configureSidePanel();
 
-chrome.tabs.onActivated.addListener(() => {
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    rememberSupportedPageTab(await chrome.tabs.get(tabId));
+  } catch (error) {
+    // The tab may have closed before the event was handled.
+  }
   notifySidePanelPageChange();
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+  if (changeInfo.url) {
+    try {
+      rememberSupportedPageTab(await chrome.tabs.get(tabId));
+    } catch (error) {
+      // Ignore tabs that disappear during navigation.
+    }
+  }
   if (changeInfo.status === 'complete' || changeInfo.url) {
     const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (activeTab?.id === tabId) notifySidePanelPageChange();
@@ -118,6 +159,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       switch (message.type) {
+        case 'GET_SIDEPANEL_PAGE_TAB': {
+          const tab = await getSidePanelPageTab();
+          sendResponse({
+            ok: !!tab,
+            tab: tab ? {
+              id: tab.id,
+              url: tab.url,
+              title: tab.title,
+              windowId: tab.windowId
+            } : null
+          });
+          break;
+        }
+        case 'SEND_TO_PAGE': {
+          let tab = null;
+          if (Number.isFinite(Number(message.tabId))) {
+            try {
+              tab = await chrome.tabs.get(Number(message.tabId));
+            } catch (error) {
+              tab = null;
+            }
+          }
+          if (!tab || !isSupportedTabUrl(tab.url)) {
+            tab = await getSidePanelPageTab();
+          }
+          if (!tab || !isSupportedTabUrl(tab.url)) {
+            sendResponse({ ok: false, error: 'No supported website tab is active.' });
+            break;
+          }
+
+          rememberSupportedPageTab(tab);
+          const injected = await ensureInjected(tab.id);
+          if (!injected) {
+            sendResponse({ ok: false, error: 'This page could not be connected to the extension.' });
+            break;
+          }
+
+          const pageResponse = await chrome.tabs.sendMessage(tab.id, message.payload);
+          sendResponse(pageResponse || { ok: false, error: 'The website did not respond.' });
+          break;
+        }
         case 'ENSURE_INJECTED': {
           const tabId = message.tabId ?? sender.tab?.id;
           const ok = await ensureInjected(tabId);

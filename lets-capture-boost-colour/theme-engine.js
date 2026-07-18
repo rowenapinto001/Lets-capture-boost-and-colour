@@ -787,8 +787,13 @@ const GOOGLE_LOGO_SELECTORS = [
   '#logo img',
   '#logo svg',
   'a[aria-label="Google"]',
+  'a[aria-label*="Google" i]',
+  'a[href^="/webhp"]',
+  'a[href*="google.com/webhp"]',
   'img[alt="Google"]',
   'svg[aria-label="Google"]',
+  'svg[aria-label*="Google" i]',
+  '[title="Google"]',
   '.jfN4p',
   '.logo'
 ].join(', ');
@@ -2350,6 +2355,28 @@ function buildThemeCss(theme, options) {
   stroke: revert !important;
   opacity: 1 !important;
 }
+
+${t.isDark ? `
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_LOGO_SELECTORS}) {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_LOGO_SELECTORS}) :where(svg, svg *) {
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_LOGO_SELECTORS}) :where(path:not([fill]), circle:not([fill]), rect:not([fill]), [fill="currentColor" i]) {
+  fill: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_LOGO_SELECTORS}) :where(path:not([stroke]), circle:not([stroke]), rect:not([stroke]), line:not([stroke]), polyline:not([stroke]), polygon:not([stroke]), [stroke="currentColor" i]) {
+  stroke: #FFFFFF !important;
+}
+` : ''}
 
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_RESULT_CHIP_SELECTORS}) {
   background:

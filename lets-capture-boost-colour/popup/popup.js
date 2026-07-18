@@ -12,6 +12,30 @@ let editingCustomThemeId = null;
 
 const $ = (id) => document.getElementById(id);
 
+async function getFocusedPageTab() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_SIDEPANEL_PAGE_TAB' });
+    if (response?.ok && response.tab) return response.tab;
+  } catch (error) {
+    // Fall back to the local query for older Chrome builds.
+  }
+
+  const [focusedTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  if (focusedTab) return focusedTab;
+
+  const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return currentTab || null;
+}
+
+async function refreshActivePage() {
+  const tab = await getFocusedPageTab();
+  activeTab = tab;
+  hostname = tab?.url ? Utilities.getHostname(tab.url) : '';
+  isSupported = !!tab && Utilities.isSupportedUrl(tab.url);
+  if ($('siteHostname')) $('siteHostname').textContent = hostname || 'unsupported page';
+  return tab;
+}
+
 function setStatus(elId, text, hide) {
   const el = $(elId);
   if (!el) return;
@@ -19,35 +43,55 @@ function setStatus(elId, text, hide) {
   el.closest('.card')?.toggleAttribute('hidden', !!hide);
 }
 
-async function sendToContent(message) {
-  if (!$('extensionToggle')?.checked) {
-    return { ok: false, error: 'Extension is disabled. Turn it on to use this tool.' };
+async function sendDirectlyToContent(message) {
+  const inject = await chrome.runtime.sendMessage({
+    type: 'ENSURE_INJECTED',
+    tabId: activeTab.id
+  });
+  if (!inject?.ok) {
+    return { ok: false, error: 'This page could not be connected to the extension.' };
   }
-  if (!activeTab || !isSupported) {
-    return { ok: false, error: Utilities.unsupportedReason(activeTab?.url) };
-  }
-  const inject = await chrome.runtime.sendMessage({ type: 'ENSURE_INJECTED', tabId: activeTab.id });
-  if (!inject || !inject.ok) {
-    return { ok: false, error: 'This page cannot be modified by extensions.' };
-  }
+
   return new Promise((resolve) => {
     chrome.tabs.sendMessage(activeTab.id, message, (response) => {
       if (chrome.runtime.lastError) {
         resolve({ ok: false, error: chrome.runtime.lastError.message });
         return;
       }
-      resolve(response || { ok: false, error: 'No response from page.' });
+      resolve(response || { ok: false, error: 'The website did not respond.' });
     });
   });
+}
+
+async function sendToContent(message) {
+  await refreshActivePage();
+  if (!$('extensionToggle')?.checked) {
+    return { ok: false, error: 'Extension is disabled. Turn it on to use this tool.' };
+  }
+  if (!activeTab || !isSupported) {
+    return { ok: false, error: Utilities.unsupportedReason(activeTab?.url) };
+  }
+  try {
+    const routedResponse = await chrome.runtime.sendMessage({
+      type: 'SEND_TO_PAGE',
+      tabId: activeTab.id,
+      payload: message
+    });
+    if (routedResponse?.error !== 'Unknown message type') return routedResponse;
+    return await sendDirectlyToContent(message);
+  } catch (error) {
+    try {
+      return await sendDirectlyToContent(message);
+    } catch (fallbackError) {
+      return { ok: false, error: fallbackError.message || error.message || 'The website could not be reached.' };
+    }
+  }
 }
 
 /* ---------------- Init ---------------- */
 
 async function init() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  activeTab = tab;
-  hostname = tab && tab.url ? Utilities.getHostname(tab.url) : '';
-  isSupported = tab && Utilities.isSupportedUrl(tab.url);
+  const tab = await refreshActivePage();
 
   $('siteHostname').textContent = hostname || 'unsupported page';
 
@@ -189,6 +233,7 @@ async function savePendingCapture(captureRecord) {
 }
 
 async function runCapture(kind) {
+  await refreshActivePage();
   if (!isSupported) {
     setStatus('captureStatusText', Utilities.unsupportedReason(activeTab?.url), false);
     return;
@@ -518,6 +563,7 @@ function getColourOptions() {
 }
 
 async function applyThemeChoice(themeId) {
+  await refreshActivePage();
   selectedThemeId = themeId;
   renderThemeGrid();
 
@@ -551,6 +597,7 @@ async function applyThemeChoice(themeId) {
 }
 
 async function removeThemeChoice() {
+  await refreshActivePage();
   selectedThemeId = null;
   renderThemeGrid();
   if (isSupported) {

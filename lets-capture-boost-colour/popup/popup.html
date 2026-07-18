@@ -198,52 +198,64 @@
       </div>
 
       <div class="card" id="colourControlsCard">
-        <h2 class="card-title">Appearance controls</h2>
+        <div class="setting-section-heading">
+          <span class="setting-icon" aria-hidden="true">☷</span>
+          <h2 class="card-title">Appearance controls</h2>
+        </div>
         <div class="slider-row">
+          <span class="setting-icon" aria-hidden="true">◒</span>
           <label for="sliderIntensity">Theme intensity</label>
           <input type="range" id="sliderIntensity" min="0" max="100" value="100">
           <span class="slider-value" id="valIntensity">100%</span>
         </div>
         <div class="slider-row">
+          <span class="setting-icon" aria-hidden="true">☼</span>
           <label for="sliderBgBrightness">Background brightness</label>
           <input type="range" id="sliderBgBrightness" min="40" max="140" value="100">
           <span class="slider-value" id="valBgBrightness">100%</span>
         </div>
         <div class="slider-row">
+          <span class="setting-icon setting-icon-letter" aria-hidden="true">T</span>
           <label for="sliderTextContrast">Text contrast</label>
           <input type="range" id="sliderTextContrast" min="70" max="150" value="100">
           <span class="slider-value" id="valTextContrast">100%</span>
         </div>
         <div class="slider-row">
+          <span class="setting-icon" aria-hidden="true">▧</span>
           <label for="sliderImgBrightness">Media brightness</label>
           <input type="range" id="sliderImgBrightness" min="100" max="100" value="100" disabled>
           <span class="slider-value" id="valImgBrightness">100%</span>
         </div>
         <div class="slider-row">
+          <span class="setting-icon" aria-hidden="true">◐</span>
           <label for="sliderImgSaturation">Media saturation</label>
           <input type="range" id="sliderImgSaturation" min="100" max="100" value="100" disabled>
           <span class="slider-value" id="valImgSaturation">100%</span>
         </div>
-        <label class="option-row">
+        <label class="option-row colour-setting-row">
+          <span class="setting-icon" aria-hidden="true">◆</span>
           <span>Protect images and videos</span>
           <input type="checkbox" id="optKeepMedia" checked disabled>
         </label>
       </div>
 
-      <div class="card">
-        <label class="option-row">
+      <div class="card website-settings-card">
+        <label class="option-row colour-setting-row">
+          <span class="setting-icon" aria-hidden="true">⚙</span>
           <span>Remember theme for <span id="colourSiteHost">this site</span></span>
           <input type="checkbox" id="optRememberTheme">
         </label>
-        <label class="option-row">
+        <label class="option-row colour-setting-row">
+          <span class="setting-icon" aria-hidden="true">◎</span>
           <span>Apply theme to every website</span>
           <input type="checkbox" id="optApplyAllSites">
         </label>
-        <label class="option-row">
+        <label class="option-row colour-setting-row">
+          <span class="setting-icon" aria-hidden="true">⊘</span>
           <span>Disable colour changes on this website</span>
           <input type="checkbox" id="optDisableSite">
         </label>
-        <button class="btn btn-ghost btn-block" id="resetSiteThemeBtn">Reset website</button>
+        <button class="btn btn-ghost btn-block" id="resetSiteThemeBtn"><span aria-hidden="true">↻</span> Reset website</button>
       </div>
 
       <div class="card hidden" id="customThemeCard">
@@ -275,7 +287,8 @@
         <div class="theme-grid" id="customThemeGrid"></div>
       </div>
 
-      <div class="card status-card">
+      <div class="card status-card colour-status-card">
+        <span class="setting-icon setting-icon-solid" aria-hidden="true">i</span>
         <p class="status-text" id="colourStatusText">Original website colours are showing.</p>
       </div>
     </section>
