@@ -45,22 +45,28 @@
     <!-- ================= CAPTURE ================= -->
     <section class="panel" id="panel-capture" role="tabpanel" aria-labelledby="tab-capture">
 
-      <div class="card">
-        <button id="captureFullPageBtn" class="btn btn-primary btn-block">Capture Full Page</button>
-        <button id="captureVisibleBtn" class="btn btn-secondary btn-block">Capture Visible Area</button>
-        <button id="captureSelectionBtn" class="btn btn-ghost btn-block">Capture Selection</button>
+      <div class="card capture-actions-card">
+        <button id="captureFullPageBtn" class="btn btn-primary btn-block capture-command-btn"><span class="capture-command-icon" aria-hidden="true"></span><span>Capture Full Page</span></button>
+        <button id="captureVisibleBtn" class="btn btn-secondary btn-block capture-command-btn"><span class="capture-command-icon" aria-hidden="true"></span><span>Capture Visible Area</span></button>
+        <button id="captureSelectionBtn" class="btn btn-ghost btn-block capture-command-btn"><span class="capture-command-icon" aria-hidden="true"></span><span>Capture Selection</span></button>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">Capture appearance</h2>
+      <div class="card capture-appearance-card">
+        <div class="capture-card-heading">
+          <span class="setting-icon" aria-hidden="true">◐</span>
+          <h2 class="card-title">Capture appearance</h2>
+        </div>
         <div class="segmented" id="appearanceSegment">
           <button class="segment-btn active" data-value="current-theme">Current colour theme</button>
           <button class="segment-btn" data-value="original">Original website</button>
         </div>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">Options</h2>
+      <div class="card capture-options-card">
+        <div class="capture-card-heading">
+          <span class="setting-icon" aria-hidden="true">☷</span>
+          <h2 class="card-title">Options</h2>
+        </div>
         <label class="option-row">
           <span>Hide sticky elements</span>
           <input type="checkbox" id="optHideSticky" checked>
@@ -88,43 +94,58 @@
         <p class="status-text" id="captureStatusText" role="status" aria-live="polite"></p>
       </div>
 
-      <div class="card" id="recentCaptureCard" hidden>
-        <h2 class="card-title">Recent capture</h2>
+      <div class="card recent-capture-card" id="recentCaptureCard" hidden>
+        <div class="capture-card-heading">
+          <span class="setting-icon" aria-hidden="true">▧</span>
+          <h2 class="card-title">Recent capture</h2>
+        </div>
         <p class="muted-text" id="recentCaptureInfo"></p>
-        <button class="btn btn-ghost btn-block" id="openRecentCaptureBtn">Open in preview</button>
+        <button class="btn btn-ghost btn-block open-preview-btn" id="openRecentCaptureBtn"><span aria-hidden="true">◉</span><span>Open in preview</span></button>
       </div>
     </section>
 
     <!-- ================= BOOST ================= -->
     <section class="panel hidden" id="panel-boost" role="tabpanel" aria-labelledby="tab-boost">
 
-      <div class="card">
-        <h2 class="card-title">Current tab volume</h2>
+      <div class="card boost-volume-card">
+        <div class="boost-card-heading">
+          <span class="setting-icon" aria-hidden="true">♫</span>
+          <h2 class="card-title">Current tab volume</h2>
+          <span class="boost-sparkle" aria-hidden="true">✦</span>
+        </div>
         <div class="volume-display" id="volumeDisplay">100%</div>
         <input type="range" id="volumeSlider" min="0" max="300" value="100"
                aria-label="Tab volume percentage" aria-valuemin="0" aria-valuemax="300" aria-valuenow="100">
         <p class="warning-text" id="volumeWarning" hidden>Volume above 200% may distort audio or feel uncomfortable.</p>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">Presets</h2>
+      <div class="card boost-presets-card">
+        <div class="boost-card-heading">
+          <span class="setting-icon" aria-hidden="true">☆</span>
+          <h2 class="card-title">Presets</h2>
+        </div>
         <div class="preset-grid">
-          <button class="btn btn-preset" data-volume="100">100%</button>
-          <button class="btn btn-preset" data-volume="125">125%</button>
-          <button class="btn btn-preset" data-volume="175">175%</button>
-          <button class="btn btn-preset" data-volume="200">200%</button>
-          <button class="btn btn-preset" data-volume="300">300%</button>
+          <button class="btn btn-preset" data-volume="100" aria-pressed="false">100%</button>
+          <button class="btn btn-preset" data-volume="125" aria-pressed="false">125%</button>
+          <button class="btn btn-preset" data-volume="175" aria-pressed="false">175%</button>
+          <button class="btn btn-preset" data-volume="200" aria-pressed="false">200%</button>
+          <button class="btn btn-preset" data-volume="300" aria-pressed="false">300%</button>
         </div>
       </div>
 
-      <div class="card two-col">
-        <button class="btn btn-secondary" id="muteBtn">Mute Tab</button>
-        <button class="btn btn-ghost" id="resetVolumeBtn">Reset</button>
+      <div class="card two-col boost-actions-card">
+        <button class="btn btn-secondary boost-action-btn" id="muteBtn"><span aria-hidden="true">⊘</span><span id="muteBtnLabel">Mute Tab</span></button>
+        <button class="btn btn-ghost boost-action-btn" id="resetVolumeBtn"><span aria-hidden="true">↻</span><span>Reset</span></button>
       </div>
 
-      <div class="card status-card">
-        <p class="status-text" id="audioStatusText">Scanning for audio…</p>
-        <label class="option-row">
+      <div class="card status-card boost-status-card">
+        <div class="boost-status-row">
+          <span class="setting-icon setting-icon-solid" aria-hidden="true">i</span>
+          <p class="status-text" id="audioStatusText">Scanning for audio…</p>
+          <span class="boost-status-check" aria-hidden="true">✓</span>
+        </div>
+        <label class="option-row boost-remember-row">
+          <span class="setting-icon" aria-hidden="true">▣</span>
           <span>Remember for <span id="rememberSiteHost">this site</span></span>
           <input type="checkbox" id="optRememberVolume">
         </label>

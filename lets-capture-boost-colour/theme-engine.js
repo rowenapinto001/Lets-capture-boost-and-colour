@@ -870,6 +870,34 @@ const YOUTUBE_MUSIC_LOGO_SELECTORS = [
   'ytmusic-nav-bar [class*="logo" i]'
 ].join(', ');
 
+const YOUTUBE_MUSIC_ICON_CONTROL_SELECTORS = [
+  'ytmusic-nav-bar tp-yt-paper-icon-button',
+  'ytmusic-nav-bar yt-icon-button',
+  'ytmusic-nav-bar ytmusic-cast-button',
+  'ytmusic-nav-bar ytmusic-settings-button',
+  'ytmusic-nav-bar ytmusic-menu-renderer',
+  'ytmusic-search-box tp-yt-paper-icon-button',
+  'ytmusic-search-box yt-icon-button',
+  'ytmusic-player-bar tp-yt-paper-icon-button',
+  'ytmusic-player-bar yt-icon-button',
+  'ytmusic-player-bar button',
+  'ytmusic-player-bar [role="button"]',
+  'ytmusic-player-page tp-yt-paper-icon-button',
+  'ytmusic-player-page yt-icon-button',
+  'ytmusic-player-page .icon-button'
+].join(', ');
+
+const YOUTUBE_MUSIC_BRIGHT_TEXT_SELECTORS = [
+  'ytmusic-nav-bar',
+  'ytmusic-guide-renderer',
+  'ytmusic-player-page',
+  'ytmusic-player-queue',
+  'ytmusic-player-queue-item',
+  'ytmusic-responsive-list-item-renderer',
+  'ytmusic-player-bar',
+  'ytmusic-tabs'
+].join(', ');
+
 const YOUTUBE_CHIP_SELECTORS = [
   'ytd-chip-cloud-chip-renderer',
   'yt-chip-cloud-chip-renderer',
@@ -2100,6 +2128,7 @@ function buildThemeCss(theme, options) {
   --lcbc-youtube-chip-bg: ${youtubeChipBackground};
   --lcbc-youtube-chip-border: ${youtubeChipBorder};
   --lcbc-youtube-chip-text: ${t.primaryText};
+  --lcbc-ytmusic-secondary-text: ${t.isDark ? Utilities.mixColors(t.secondaryText, '#FFFFFF', 0.28) : t.secondaryText};
   --lcbc-google-chip-bg: ${googleChipBackground};
   --lcbc-google-chip-bg-2: ${googleChipBackground2};
   --lcbc-google-chip-border: ${googleChipBorder};
@@ -2713,6 +2742,50 @@ ${buildWebsiteAdapterCss()}
   stroke: currentColor !important;
   opacity: 1 !important;
 }
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MUSIC_ICON_CONTROL_SELECTORS}),
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MUSIC_ICON_CONTROL_SELECTORS}) :where([data-lcbc-bg-role]) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MUSIC_ICON_CONTROL_SELECTORS}) :where(yt-icon, ytmusic-icon, tp-yt-iron-icon, iron-icon, svg, svg *, path, circle, rect, line, polyline, polygon) {
+  color: var(--lcbc-primary-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+${t.isDark ? `
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MUSIC_BRIGHT_TEXT_SELECTORS}) {
+  color: var(--lcbc-primary-text) !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MUSIC_BRIGHT_TEXT_SELECTORS}) :where(yt-formatted-string, a, button, [role="button"], [role="tab"], h1, h2, h3, h4, #title, .title, #text, .text) {
+  color: var(--lcbc-primary-text) !important;
+  -webkit-text-fill-color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_MUSIC_BRIGHT_TEXT_SELECTORS}) :where(#byline, .byline, #subtitle, .subtitle, #duration, .duration, .secondary-flex-columns) {
+  color: var(--lcbc-ytmusic-secondary-text) !important;
+  -webkit-text-fill-color: var(--lcbc-ytmusic-secondary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytmusic-search-box :where(input, #input) {
+  color: var(--lcbc-primary-text) !important;
+  -webkit-text-fill-color: var(--lcbc-primary-text) !important;
+  opacity: 1 !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytmusic-search-box :where(input, #input)::placeholder {
+  color: var(--lcbc-ytmusic-secondary-text) !important;
+  -webkit-text-fill-color: var(--lcbc-ytmusic-secondary-text) !important;
+  opacity: 1 !important;
+}
+` : ''}
 
 ${t.isDark ? `
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_CHIP_SELECTORS}),

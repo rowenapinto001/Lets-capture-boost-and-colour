@@ -355,7 +355,7 @@ async function initBoost() {
   });
 
   $('muteBtn').addEventListener('click', async () => {
-    const isMuted = $('muteBtn').textContent.includes('Unmute');
+    const isMuted = $('muteBtnLabel').textContent.includes('Unmute');
     const res = await sendToContent({ type: isMuted ? 'UNMUTE_TAB' : 'MUTE_TAB' });
     handleAudioResult(res);
     if ($('optRememberVolume').checked && res?.ok) {
@@ -385,7 +385,7 @@ async function initBoost() {
       await StorageManager.setSiteSettings(hostname, {
         rememberVolume: true,
         volume: Number($('volumeSlider').value),
-        muted: $('muteBtn').textContent.includes('Unmute')
+        muted: $('muteBtnLabel').textContent.includes('Unmute')
       });
     } else {
       await StorageManager.removeSiteSetting(hostname, 'rememberVolume');
@@ -404,7 +404,18 @@ async function initBoost() {
 function updateVolumeDisplay(v) {
   $('volumeDisplay').textContent = `${v}%`;
   $('volumeSlider').setAttribute('aria-valuenow', v);
+  $('volumeSlider').style.setProperty('--volume-progress', `${Math.max(0, Math.min(100, v / 3))}%`);
+  document.querySelectorAll('.btn-preset').forEach(btn => {
+    const active = Number(btn.dataset.volume) === Number(v);
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
   $('volumeWarning').hidden = v <= 200;
+}
+
+function updateMuteButton(muted) {
+  $('muteBtnLabel').textContent = muted ? 'Unmute Tab' : 'Mute Tab';
+  $('muteBtn').classList.toggle('active', muted);
 }
 
 async function maybeRememberVolume(v) {
@@ -432,7 +443,7 @@ function handleAudioResult(res) {
   } else {
     setStatus('audioStatusText', `Audio found: ${status.mediaCount} media element${status.mediaCount === 1 ? '' : 's'}.`, false);
   }
-  $('muteBtn').textContent = status.muted ? 'Unmute Tab' : 'Mute Tab';
+  updateMuteButton(status.muted);
 }
 
 /* ================= COLOUR ================= */
