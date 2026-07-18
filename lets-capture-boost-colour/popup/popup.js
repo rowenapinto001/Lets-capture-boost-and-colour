@@ -161,6 +161,23 @@ function updateProgress(payload) {
   $('progressText').textContent = payload.message;
 }
 
+async function savePendingCapture(captureRecord) {
+  try {
+    const storedCapture = await CaptureStore.saveCapture(captureRecord);
+    await chrome.storage.local.set({ pendingCapture: storedCapture });
+    return storedCapture;
+  } catch (storeError) {
+    console.warn('[LCBC popup] IndexedDB capture storage failed, trying inline storage', storeError);
+    try {
+      await chrome.storage.local.set({ pendingCapture: captureRecord });
+      return captureRecord;
+    } catch (inlineError) {
+      console.error('[LCBC popup] pending capture save failed', inlineError);
+      throw new Error('The screenshot was captured, but it was too large to prepare for preview. Try visible-area capture or a shorter page.');
+    }
+  }
+}
+
 async function runCapture(kind) {
   if (!isSupported) {
     setStatus('captureStatusText', Utilities.unsupportedReason(activeTab?.url), false);
@@ -208,8 +225,14 @@ async function runCapture(kind) {
     height: result.height || (result.parts && result.parts[0]?.height)
   } });
 
+  try {
+    await savePendingCapture(captureRecord);
+  } catch (e) {
+    setStatus('captureStatusText', e.message || 'Capture could not be prepared for preview.', false);
+    return;
+  }
+
   if ($('optOpenPreview').checked) {
-    await chrome.storage.local.set({ pendingCapture: captureRecord });
     chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
   }
 }

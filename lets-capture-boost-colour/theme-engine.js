@@ -1973,6 +1973,8 @@ function buildThemeCss(theme, options) {
   --lcbc-secondary-button-bg: ${t.secondaryButtonBackground};
   --lcbc-secondary-button-text: ${t.secondaryButtonText};
   --lcbc-youtube-logo-text: ${t.isDark ? '#FFFFFF' : '#0B1220'};
+  --lcbc-youtube-play-badge: ${t.isDark ? '#FFFFFF' : '#ff0033'};
+  --lcbc-youtube-play-mark: ${t.isDark ? '#0B1220' : '#FFFFFF'};
   --lcbc-youtube-chip-bg: ${youtubeChipBackground};
   --lcbc-youtube-chip-border: ${youtubeChipBorder};
   --lcbc-youtube-chip-text: ${t.primaryText};
@@ -2615,8 +2617,10 @@ ${t.isDark ? `
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytd-masthead,
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] ytd-topbar-logo-renderer {
   --yt-spec-wordmark-text: var(--lcbc-youtube-logo-text) !important;
-  --yt-spec-brand-icon-active: #ff0033 !important;
-  --yt-spec-brand-icon-inactive: #ff0033 !important;
+  --yt-spec-brand-icon-active: var(--lcbc-youtube-play-badge) !important;
+  --yt-spec-brand-icon-inactive: var(--lcbc-youtube-play-badge) !important;
+  --yt-spec-static-brand-red: var(--lcbc-youtube-play-badge) !important;
+  --yt-spec-static-brand-white: var(--lcbc-youtube-play-mark) !important;
 }
 
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) {
@@ -2643,17 +2647,43 @@ ${t.isDark ? `
   visibility: visible !important;
 }
 
-:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i], [fill*="brand-icon" i]) {
-  color: #ff0033 !important;
-  fill: #ff0033 !important;
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ff0000" i], [fill="#f00" i], [fill="red" i], [fill*="brand-icon" i], [fill*="static-brand-red" i]) {
+  color: var(--lcbc-youtube-play-badge) !important;
+  fill: var(--lcbc-youtube-play-badge) !important;
   stroke: revert !important;
 }
 
 :root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(${YOUTUBE_LOGO_SELECTORS}) :where([fill="#ffffff" i], [fill="#fff" i], [fill="white" i]) {
-  color: #ffffff !important;
-  fill: #ffffff !important;
+  color: var(--lcbc-youtube-play-mark) !important;
+  fill: var(--lcbc-youtube-play-mark) !important;
   stroke: revert !important;
 }
+
+${t.isDark ? `
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(a#logo) {
+  isolation: isolate !important;
+  position: relative !important;
+}
+
+:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(a#logo)::after {
+  background: none !important;
+  border-bottom: 4.5px solid transparent !important;
+  border-left: 7.5px solid var(--lcbc-youtube-play-mark) !important;
+  border-right: 0 !important;
+  border-top: 4.5px solid transparent !important;
+  box-shadow: none !important;
+  content: "" !important;
+  height: 0 !important;
+  left: 11px !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 0 !important;
+  z-index: 4 !important;
+}
+` : ''}
 `;
 }
 

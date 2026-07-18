@@ -13,6 +13,10 @@ const INJECT_FILES = [
 
 const lastCaptureTime = new Map(); // windowId -> timestamp, to respect capture rate limits
 
+if (typeof importScripts === 'function') {
+  importScripts('capture-store.js');
+}
+
 async function ensureInjected(tabId) {
   try {
     const [{ result } = {}] = await chrome.scripting.executeScript({
@@ -45,6 +49,18 @@ async function captureVisibleTabThrottled(windowId) {
   return chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 
+async function savePendingCapture(capture) {
+  try {
+    const storedCapture = await CaptureStore.saveCapture(capture);
+    await chrome.storage.local.set({ pendingCapture: storedCapture });
+    return storedCapture;
+  } catch (storeError) {
+    console.warn('[LCBC background] IndexedDB capture storage failed, trying inline storage', storeError);
+    await chrome.storage.local.set({ pendingCapture: capture });
+    return capture;
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
@@ -68,7 +84,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
         case 'OPEN_PREVIEW': {
-          await chrome.storage.local.set({ pendingCapture: message.capture });
+          await savePendingCapture(message.capture);
           await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
           sendResponse({ ok: true });
           break;
@@ -125,7 +141,7 @@ chrome.commands.onCommand.addListener(async (command) => {
         const capture = response.result.multiPart
           ? { multiPart: true, parts: response.result.parts, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title }
           : { dataUrl: response.result.dataUrl, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title };
-        await chrome.storage.local.set({ pendingCapture: capture });
+        await savePendingCapture(capture);
         await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
       }
       break;
@@ -139,7 +155,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       });
       if (response && response.ok && cfg.openPreview) {
         const capture = { dataUrl: response.result.dataUrl, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title };
-        await chrome.storage.local.set({ pendingCapture: capture });
+        await savePendingCapture(capture);
         await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
       }
       break;

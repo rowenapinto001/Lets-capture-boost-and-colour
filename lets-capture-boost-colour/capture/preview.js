@@ -3,7 +3,13 @@
    controls. Screenshot data never leaves the device. */
 
 let capture = null;
+let pendingCaptureRef = null;
 let zoom = 1;
+
+const VIEWER_FRIENDLY_RATIO_THRESHOLD = 3.2;
+const VIEWER_FRIENDLY_TARGET_RATIO = 1.35;
+const VIEWER_FRIENDLY_MAX_COLUMNS = 6;
+const VIEWER_FRIENDLY_MAX_CANVAS_DIMENSION = 16000;
 
 const $ = (id) => document.getElementById(id);
 
@@ -32,10 +38,18 @@ function filenameWithExtension(input, ext) {
 
 async function render() {
   const data = await chrome.storage.local.get(['pendingCapture']);
-  capture = data.pendingCapture;
+  pendingCaptureRef = data.pendingCapture;
+  try {
+    capture = await CaptureStore.resolvePendingCapture(pendingCaptureRef);
+  } catch (e) {
+    console.error('[LCBC preview] failed to load pending capture', e);
+    capture = null;
+  }
 
   if (!capture) {
-    $('emptyState').classList.remove('hidden');
+    showEmptyState(pendingCaptureRef?.stored
+      ? 'Screenshot data could not be loaded. Please retake the capture.'
+      : 'No screenshot to preview yet.');
     return;
   }
   $('emptyState').classList.add('hidden');
@@ -47,7 +61,25 @@ async function render() {
   }
 }
 
+function showEmptyState(message) {
+  $('emptyState').textContent = message;
+  $('emptyState').classList.remove('hidden');
+  $('imageWrap').classList.add('hidden');
+  $('partsWrap').classList.add('hidden');
+}
+
+function fitSingleImageToViewer(img) {
+  const viewerWidth = Math.max(1, $('viewer').clientWidth - 32);
+  zoom = Utilities.clamp(Math.min(1, viewerWidth / Math.max(1, img.naturalWidth)), 0.05, 1);
+  applyZoom();
+}
+
 function renderSingle() {
+  if (!capture.dataUrl) {
+    showEmptyState('Screenshot data is missing. Please retake the capture.');
+    return;
+  }
+
   $('imageWrap').classList.remove('hidden');
   $('partsWrap').classList.add('hidden');
   const img = $('previewImage');
@@ -55,13 +87,19 @@ function renderSingle() {
   img.onload = () => {
     $('detailDimensions').textContent = `${img.naturalWidth} × ${img.naturalHeight}px`;
     $('detailSize').textContent = Utilities.formatBytes(estimateBytesFromDataUrl(capture.dataUrl));
+    fitSingleImageToViewer(img);
   };
+  img.onerror = () => showEmptyState('Screenshot preview could not be decoded. Please retake the capture.');
   $('detailType').textContent = capture.captureType === 'fullpage' ? 'Full page' : 'Visible area';
   $('filenameInput').value = defaultFilename(capture.captureType === 'fullpage' ? 'fullpage' : 'visible', 'png');
-  applyZoom();
 }
 
 function renderParts() {
+  if (!Array.isArray(capture.parts) || !capture.parts.length) {
+    showEmptyState('Screenshot sections are missing. Please retake the capture.');
+    return;
+  }
+
   $('imageWrap').classList.add('hidden');
   $('partsWrap').classList.remove('hidden');
   const wrap = $('partsWrap');
@@ -115,6 +153,73 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([arr], { type: mime });
 }
 
+function loadDataUrlImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not decode screenshot image.'));
+    img.src = dataUrl;
+  });
+}
+
+async function createViewerFriendlyFullPageExport(dataUrl) {
+  if (capture?.captureType !== 'fullpage') {
+    return { dataUrl, transformed: false, columns: 1 };
+  }
+
+  const img = await loadDataUrlImage(dataUrl);
+  const width = img.naturalWidth || img.width;
+  const height = img.naturalHeight || img.height;
+  const ratio = height / Math.max(1, width);
+
+  if (ratio <= VIEWER_FRIENDLY_RATIO_THRESHOLD) {
+    return { dataUrl, transformed: false, columns: 1 };
+  }
+
+  const maxColumnsByWidth = Math.floor(VIEWER_FRIENDLY_MAX_CANVAS_DIMENSION / Math.max(1, width));
+  const minColumnsByHeight = Math.ceil(height / VIEWER_FRIENDLY_MAX_CANVAS_DIMENSION);
+  const idealColumns = Math.ceil(Math.sqrt(ratio / VIEWER_FRIENDLY_TARGET_RATIO));
+  const maxColumns = Math.max(1, Math.min(VIEWER_FRIENDLY_MAX_COLUMNS, maxColumnsByWidth));
+
+  if (maxColumns < minColumnsByHeight) {
+    return { dataUrl, transformed: false, columns: 1 };
+  }
+
+  const columns = Utilities.clamp(idealColumns, Math.max(2, minColumnsByHeight), maxColumns);
+  if (columns <= 1) {
+    return { dataUrl, transformed: false, columns: 1 };
+  }
+
+  const sliceHeight = Math.ceil(height / columns);
+  const canvasWidth = width * columns;
+  const canvasHeight = sliceHeight;
+
+  if (canvasWidth > VIEWER_FRIENDLY_MAX_CANVAS_DIMENSION ||
+      canvasHeight > VIEWER_FRIENDLY_MAX_CANVAS_DIMENSION) {
+    return { dataUrl, transformed: false, columns: 1 };
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  for (let column = 0; column < columns; column++) {
+    const sourceY = column * sliceHeight;
+    const sourceHeight = Math.min(sliceHeight, height - sourceY);
+    if (sourceHeight <= 0) continue;
+    ctx.drawImage(img, 0, sourceY, width, sourceHeight, column * width, 0, width, sourceHeight);
+  }
+
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    transformed: true,
+    columns
+  };
+}
+
 function convertToJpeg(dataUrl, quality) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -137,7 +242,7 @@ function downloadDataUrl(dataUrl, filename) {
 }
 
 function initDownloads() {
-  $('downloadPngBtn').addEventListener('click', () => {
+  $('downloadPngBtn').addEventListener('click', async () => {
     if (!capture) return;
     const base = $('filenameInput').value.trim() || 'screenshot';
     const filename = filenameWithExtension(base, 'png');
@@ -146,10 +251,21 @@ function initDownloads() {
       capture.parts.forEach((part, i) => {
         downloadDataUrl(part.dataUrl, filename.replace(/\.png$/, `-part-${i + 1}.png`));
       });
+      setStatus('PNG sections download started.');
     } else {
-      downloadDataUrl(capture.dataUrl, filename);
+      try {
+        setStatus('Preparing PNG for image viewer...');
+        const exportResult = await createViewerFriendlyFullPageExport(capture.dataUrl);
+        downloadDataUrl(exportResult.dataUrl, filename);
+        setStatus(exportResult.transformed
+          ? `PNG download started. The tall page was arranged into ${exportResult.columns} columns so it opens wider in image viewers.`
+          : 'PNG download started.');
+      } catch (e) {
+        console.error('[LCBC preview] PNG export failed', e);
+        downloadDataUrl(capture.dataUrl, filename);
+        setStatus('PNG download started with the original full-page layout.');
+      }
     }
-    setStatus('PNG download started.');
   });
 
   $('downloadJpegBtn').addEventListener('click', async () => {
@@ -162,11 +278,23 @@ function initDownloads() {
         const jpegUrl = await convertToJpeg(capture.parts[i].dataUrl, quality);
         downloadDataUrl(jpegUrl, `${Utilities.sanitizeFilename(base)}-part-${i + 1}.jpg`);
       }
+      setStatus('JPEG sections download started.');
     } else {
-      const jpegUrl = await convertToJpeg(capture.dataUrl, quality);
-      downloadDataUrl(jpegUrl, `${Utilities.sanitizeFilename(base)}.jpg`);
+      try {
+        setStatus('Preparing JPEG for image viewer...');
+        const exportResult = await createViewerFriendlyFullPageExport(capture.dataUrl);
+        const jpegUrl = await convertToJpeg(exportResult.dataUrl, quality);
+        downloadDataUrl(jpegUrl, `${Utilities.sanitizeFilename(base)}.jpg`);
+        setStatus(exportResult.transformed
+          ? `JPEG download started. The tall page was arranged into ${exportResult.columns} columns so it opens wider in image viewers.`
+          : 'JPEG download started.');
+      } catch (e) {
+        console.error('[LCBC preview] JPEG export failed', e);
+        const jpegUrl = await convertToJpeg(capture.dataUrl, quality);
+        downloadDataUrl(jpegUrl, `${Utilities.sanitizeFilename(base)}.jpg`);
+        setStatus('JPEG download started with the original full-page layout.');
+      }
     }
-    setStatus('JPEG download started.');
   });
 
   $('jpegQuality').addEventListener('input', (e) => {
@@ -197,11 +325,13 @@ function initDownloads() {
 
 function initActions() {
   $('retakeBtn').addEventListener('click', async () => {
+    await CaptureStore.deletePendingCapture(pendingCaptureRef);
     await chrome.storage.local.remove('pendingCapture');
     window.close();
   });
 
   $('deleteBtn').addEventListener('click', async () => {
+    await CaptureStore.deletePendingCapture(pendingCaptureRef);
     await chrome.storage.local.remove('pendingCapture');
     await chrome.storage.local.set({ recentCapture: null });
     location.reload();
