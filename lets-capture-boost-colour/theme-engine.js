@@ -2886,31 +2886,6 @@ ${t.isDark ? `
   stroke: revert !important;
 }
 
-${t.isDark ? `
-:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(a#logo) {
-  isolation: isolate !important;
-  position: relative !important;
-}
-
-:root[${THEME_ATTR}][${SITE_ATTR}="youtube"] :where(a#logo)::after {
-  background: none !important;
-  border-bottom: 4.5px solid transparent !important;
-  border-left: 7.5px solid var(--lcbc-youtube-play-mark) !important;
-  border-right: 0 !important;
-  border-top: 4.5px solid transparent !important;
-  box-shadow: none !important;
-  content: "" !important;
-  height: 0 !important;
-  left: 11px !important;
-  opacity: 1 !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 0 !important;
-  z-index: 4 !important;
-}
-` : ''}
 `;
 }
 
