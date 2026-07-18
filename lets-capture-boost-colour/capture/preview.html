@@ -60,6 +60,17 @@
     <div class="card">
       <h2 class="card-title">Actions</h2>
       <button id="retakeBtn" class="btn btn-ghost btn-block">Retake</button>
+      <div id="retakeChoices" class="retake-choices" hidden>
+        <button class="retake-choice" data-retake-kind="full" type="button">
+          <span>Full page</span>
+        </button>
+        <button class="retake-choice" data-retake-kind="selection" type="button">
+          <span>Select area</span>
+        </button>
+        <button class="retake-choice" data-retake-kind="visible" type="button">
+          <span>Visible area</span>
+        </button>
+      </div>
       <button id="deleteBtn" class="btn btn-ghost btn-block">Delete</button>
       <button id="closeBtn" class="btn btn-ghost btn-block">Close</button>
     </div>

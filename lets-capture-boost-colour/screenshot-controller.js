@@ -13,6 +13,7 @@ const ScreenshotController = (() => {
   let scrollStyleEl = null;
   let originalScrollBehavior = null;
   let originalBodyScrollBehavior = null;
+  let activeSelectionCancel = null;
 
   function requestCaptureVisibleTab() {
     return new Promise((resolve, reject) => {
@@ -197,6 +198,204 @@ const ScreenshotController = (() => {
     return loadImage(dataUrl);
   }
 
+  function selectVisibleRect() {
+    if (activeSelectionCancel) activeSelectionCancel();
+
+    return new Promise((resolve, reject) => {
+      const overlay = document.createElement('div');
+      const box = document.createElement('div');
+      const hint = document.createElement('div');
+      const previousCursor = document.documentElement.style.cursor;
+      const previousUserSelect = document.documentElement.style.userSelect;
+      let settled = false;
+      let dragging = false;
+      let pointerId = null;
+      let startX = 0;
+      let startY = 0;
+      let currentRect = null;
+
+      overlay.id = 'lcbc-selection-capture-overlay';
+      overlay.setAttribute('role', 'presentation');
+      overlay.setAttribute('data-lcbc-ignore', '');
+      overlay.style.cssText = [
+        'position: fixed',
+        'inset: 0',
+        'z-index: 2147483647',
+        'cursor: crosshair',
+        'background: rgba(15, 23, 42, 0.18)',
+        'pointer-events: auto',
+        'touch-action: none'
+      ].join(';');
+
+      box.style.cssText = [
+        'position: fixed',
+        'display: none',
+        'border: 2px solid #FFFFFF',
+        'background: rgba(255, 255, 255, 0.08)',
+        'box-shadow: 0 0 0 99999px rgba(15, 23, 42, 0.52), 0 0 0 1px rgba(0, 0, 0, 0.45) inset',
+        'pointer-events: none'
+      ].join(';');
+
+      hint.textContent = 'Drag to select area. Esc cancels.';
+      hint.style.cssText = [
+        'position: fixed',
+        'left: 50%',
+        'top: 18px',
+        'transform: translateX(-50%)',
+        'padding: 8px 12px',
+        'border-radius: 999px',
+        'background: rgba(15, 23, 42, 0.88)',
+        'color: #FFFFFF',
+        'font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        'box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28)',
+        'pointer-events: none'
+      ].join(';');
+
+      overlay.appendChild(box);
+      overlay.appendChild(hint);
+
+      const clampToViewport = (value, max) => Math.min(Math.max(0, value), max);
+
+      const updateBox = (clientX, clientY) => {
+        const x = clampToViewport(clientX, window.innerWidth);
+        const y = clampToViewport(clientY, window.innerHeight);
+        const left = Math.min(startX, x);
+        const top = Math.min(startY, y);
+        const width = Math.abs(x - startX);
+        const height = Math.abs(y - startY);
+        currentRect = { left, top, width, height };
+        box.style.display = 'block';
+        box.style.left = `${left}px`;
+        box.style.top = `${top}px`;
+        box.style.width = `${width}px`;
+        box.style.height = `${height}px`;
+      };
+
+      const cleanup = () => {
+        document.removeEventListener('keydown', onKeyDown, true);
+        overlay.removeEventListener('pointerdown', onPointerDown, true);
+        overlay.removeEventListener('pointermove', onPointerMove, true);
+        overlay.removeEventListener('pointerup', onPointerUp, true);
+        overlay.removeEventListener('pointercancel', onCancel, true);
+        document.documentElement.style.cursor = previousCursor;
+        document.documentElement.style.userSelect = previousUserSelect;
+        overlay.remove();
+        activeSelectionCancel = null;
+      };
+
+      const finish = (result, error) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) reject(error);
+        else resolve(result);
+      };
+
+      function onPointerDown(event) {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        pointerId = event.pointerId;
+        dragging = true;
+        startX = clampToViewport(event.clientX, window.innerWidth);
+        startY = clampToViewport(event.clientY, window.innerHeight);
+        overlay.setPointerCapture(pointerId);
+        updateBox(event.clientX, event.clientY);
+      }
+
+      function onPointerMove(event) {
+        if (!dragging || event.pointerId !== pointerId) return;
+        event.preventDefault();
+        updateBox(event.clientX, event.clientY);
+      }
+
+      function onPointerUp(event) {
+        if (!dragging || event.pointerId !== pointerId) return;
+        event.preventDefault();
+        dragging = false;
+        updateBox(event.clientX, event.clientY);
+        if (!currentRect || currentRect.width < 8 || currentRect.height < 8) {
+          finish(null, new Error('Selection is too small. Drag a larger area and try again.'));
+          return;
+        }
+        finish(currentRect);
+      }
+
+      function onCancel() {
+        finish(null, new Error('Selection capture was cancelled.'));
+      }
+
+      function onKeyDown(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          onCancel();
+        }
+      }
+
+      activeSelectionCancel = onCancel;
+      document.documentElement.style.cursor = 'crosshair';
+      document.documentElement.style.userSelect = 'none';
+      overlay.addEventListener('pointerdown', onPointerDown, true);
+      overlay.addEventListener('pointermove', onPointerMove, true);
+      overlay.addEventListener('pointerup', onPointerUp, true);
+      overlay.addEventListener('pointercancel', onCancel, true);
+      document.addEventListener('keydown', onKeyDown, true);
+      document.documentElement.appendChild(overlay);
+    });
+  }
+
+  async function captureSelectionRect(rect, { appearance = 'current-theme' } = {}) {
+    return withThemeAppearance(appearance, async () => {
+      await Utilities.wait(90);
+      const dataUrl = await requestCaptureVisibleTab();
+      const img = await loadImage(dataUrl);
+      const scaleX = img.width / Math.max(1, window.innerWidth);
+      const scaleY = img.height / Math.max(1, window.innerHeight);
+      const sourceX = Math.max(0, Math.round(rect.left * scaleX));
+      const sourceY = Math.max(0, Math.round(rect.top * scaleY));
+      const sourceWidth = Math.min(img.width - sourceX, Math.max(1, Math.round(rect.width * scaleX)));
+      const sourceHeight = Math.min(img.height - sourceY, Math.max(1, Math.round(rect.height * scaleY)));
+      const canvas = document.createElement('canvas');
+      canvas.width = sourceWidth;
+      canvas.height = sourceHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+
+      return {
+        dataUrl: canvas.toDataURL('image/png'),
+        width: sourceWidth,
+        height: sourceHeight,
+        captureType: 'selection'
+      };
+    });
+  }
+
+  async function saveCaptureFromPage(result, openPreview, appearance) {
+    const capture = {
+      ...(result.multiPart
+        ? { multiPart: true, parts: result.parts }
+        : { dataUrl: result.dataUrl }),
+      width: result.width,
+      height: result.height,
+      captureType: result.captureType,
+      hostname: location.hostname || 'page',
+      title: document.title,
+      sourceUrl: location.href,
+      captureAppearance: appearance
+    };
+
+    await chrome.runtime.sendMessage({
+      type: 'OPEN_PREVIEW',
+      capture,
+      recentCapture: {
+        captureType: result.captureType,
+        hostname: capture.hostname,
+        width: result.width,
+        height: result.height
+      },
+      openPreview
+    });
+  }
+
   async function withThemeAppearance(appearance, fn) {
     const wasApplied = window.ThemeEngine && ThemeEngine.isApplied();
     let removedTheme = null;
@@ -278,6 +477,27 @@ const ScreenshotController = (() => {
           captureType: 'visible'
         };
       });
+    },
+
+    async startSelectionCapture({
+      appearance = 'current-theme',
+      openPreview = true,
+      onProgress = () => {}
+    } = {}) {
+      onProgress({ current: 0, total: 2, message: 'Drag over the area to capture...' });
+      const rect = await selectVisibleRect();
+      onProgress({ current: 1, total: 2, message: 'Capturing selected area...' });
+      const result = await captureSelectionRect(rect, { appearance });
+      await saveCaptureFromPage(result, openPreview, appearance);
+      onProgress({ current: 2, total: 2, message: 'Selection capture created successfully.' });
+      return result;
+    },
+
+    async saveCaptureResult(result, {
+      appearance = 'current-theme',
+      openPreview = true
+    } = {}) {
+      await saveCaptureFromPage(result, openPreview, appearance);
     },
 
     async captureFullPage({

@@ -138,6 +138,58 @@
             sendResponse({ ok: true, result });
             break;
           }
+          case 'START_SELECTION_CAPTURE_PAGE': {
+            ScreenshotController.startSelectionCapture({
+              ...(message.options || {}),
+              onProgress: sendProgress
+            }).catch((e) => {
+              sendProgress({
+                current: 0,
+                total: 0,
+                message: e.message || 'Selection capture could not be completed.'
+              });
+            });
+            sendResponse({ ok: true, started: true });
+            break;
+          }
+          case 'START_RETAKE_CAPTURE_PAGE': {
+            const options = message.options || {};
+            const kind = options.kind === 'full' ? 'full' : 'visible';
+            (async () => {
+              try {
+                const appearance = options.appearance || 'current-theme';
+                const result = kind === 'full'
+                  ? await ScreenshotController.captureFullPage({
+                    appearance,
+                    hideSticky: options.hideSticky !== false,
+                    restoreScroll: options.restoreScroll !== false,
+                    includeBackground: options.includeBackground !== false,
+                    onProgress: sendProgress
+                  })
+                  : await ScreenshotController.captureVisibleArea({ appearance });
+
+                await ScreenshotController.saveCaptureResult(result, {
+                  appearance,
+                  openPreview: options.openPreview !== false
+                });
+                sendProgress({
+                  current: 1,
+                  total: 1,
+                  message: kind === 'full'
+                    ? 'Full-page retake created successfully.'
+                    : 'Visible-area retake created successfully.'
+                });
+              } catch (e) {
+                sendProgress({
+                  current: 0,
+                  total: 0,
+                  message: e.message || 'Retake capture could not be completed.'
+                });
+              }
+            })();
+            sendResponse({ ok: true, started: true });
+            break;
+          }
           case 'CAPTURE_FULL_PAGE_PAGE': {
             const result = await ScreenshotController.captureFullPage({
               ...(message.options || {}),

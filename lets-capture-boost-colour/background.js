@@ -61,6 +61,23 @@ async function savePendingCapture(capture) {
   }
 }
 
+function enrichCaptureWithTab(capture, tab, fallbackAppearance) {
+  if (!capture || !tab) return capture;
+  return {
+    ...capture,
+    sourceTabId: capture.sourceTabId ?? tab.id,
+    sourceWindowId: capture.sourceWindowId ?? tab.windowId,
+    sourceUrl: capture.sourceUrl ?? tab.url,
+    captureAppearance: capture.captureAppearance ?? fallbackAppearance
+  };
+}
+
+function isSupportedTabUrl(url) {
+  return !!url && !/^(chrome|edge|about|devtools|chrome-extension):/.test(url) &&
+    !url.includes('chrome.google.com/webstore') &&
+    !url.includes('chromewebstore.google.com');
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
@@ -84,9 +101,73 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
         case 'OPEN_PREVIEW': {
-          await savePendingCapture(message.capture);
-          await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
+          const capture = enrichCaptureWithTab(message.capture, sender.tab, message.capture?.captureAppearance);
+          const storedCapture = await savePendingCapture(capture);
+          if (message.recentCapture) {
+            await chrome.storage.local.set({ recentCapture: message.recentCapture });
+          } else if (storedCapture) {
+            await chrome.storage.local.set({
+              recentCapture: {
+                captureType: storedCapture.captureType,
+                hostname: storedCapture.hostname,
+                width: storedCapture.width,
+                height: storedCapture.height
+              }
+            });
+          }
+          if (message.openPreview !== false) {
+            await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
+          }
           sendResponse({ ok: true });
+          break;
+        }
+        case 'START_RETAKE_SELECTION':
+        case 'START_RETAKE_CAPTURE': {
+          const tabId = Number(message.tabId);
+          if (!Number.isFinite(tabId)) {
+            sendResponse({ ok: false, error: 'The original page tab could not be found.' });
+            break;
+          }
+
+          let tab = null;
+          try {
+            tab = await chrome.tabs.get(tabId);
+          } catch (e) {
+            sendResponse({ ok: false, error: 'The original page is no longer available for capture.' });
+            break;
+          }
+
+          if (!tab || !tab.id || !isSupportedTabUrl(tab.url)) {
+            sendResponse({ ok: false, error: 'The original page is no longer available for capture.' });
+            break;
+          }
+
+          if (typeof tab.windowId === 'number') {
+            await chrome.windows.update(tab.windowId, { focused: true });
+          }
+          await chrome.tabs.update(tab.id, { active: true });
+
+          const injected = await ensureInjected(tab.id);
+          if (!injected) {
+            sendResponse({ ok: false, error: 'This page cannot be modified by extensions.' });
+            break;
+          }
+
+          const kind = ['full', 'visible', 'selection'].includes(message.options?.kind)
+            ? message.options.kind
+            : 'selection';
+          const response = await chrome.tabs.sendMessage(tab.id, {
+            type: kind === 'selection' ? 'START_SELECTION_CAPTURE_PAGE' : 'START_RETAKE_CAPTURE_PAGE',
+            options: {
+              kind,
+              appearance: message.options?.appearance || 'current-theme',
+              hideSticky: message.options?.hideSticky !== false,
+              restoreScroll: message.options?.restoreScroll !== false,
+              includeBackground: message.options?.includeBackground !== false,
+              openPreview: true
+            }
+          });
+          sendResponse(response || { ok: true, started: true });
           break;
         }
         default:
@@ -139,8 +220,8 @@ chrome.commands.onCommand.addListener(async (command) => {
       });
       if (response && response.ok && cfg.openPreview) {
         const capture = response.result.multiPart
-          ? { multiPart: true, parts: response.result.parts, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title }
-          : { dataUrl: response.result.dataUrl, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title };
+          ? { multiPart: true, parts: response.result.parts, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title, sourceTabId: tab.id, sourceWindowId: tab.windowId, sourceUrl: tab.url, captureAppearance: cfg.captureAppearance }
+          : { dataUrl: response.result.dataUrl, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title, sourceTabId: tab.id, sourceWindowId: tab.windowId, sourceUrl: tab.url, captureAppearance: cfg.captureAppearance };
         await savePendingCapture(capture);
         await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
       }
@@ -154,7 +235,7 @@ chrome.commands.onCommand.addListener(async (command) => {
         options: { appearance: cfg.captureAppearance }
       });
       if (response && response.ok && cfg.openPreview) {
-        const capture = { dataUrl: response.result.dataUrl, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title };
+        const capture = { dataUrl: response.result.dataUrl, width: response.result.width, height: response.result.height, captureType: response.result.captureType, hostname: Utilities_getHostname(tab.url), title: tab.title, sourceTabId: tab.id, sourceWindowId: tab.windowId, sourceUrl: tab.url, captureAppearance: cfg.captureAppearance };
         await savePendingCapture(capture);
         await chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
       }

@@ -54,6 +54,7 @@ function buildTheme(base) {
   t.mutedText = t.mutedText || Utilities.mixColors(t.primaryText, t.pageBackground, t.isDark ? 0.44 : 0.48);
   t.inverseText = t.inverseText || (t.isDark ? '#111827' : '#FFFFFF');
   t.inputText = t.inputText || t.primaryText;
+  t.placeholderText = t.placeholderText || t.mutedText;
   t.selectedBackground = t.selectedBackground || t.active || (t.isDark
     ? Utilities.mixColors(t.surface, t.accent, 0.28)
     : Utilities.mixColors(t.surface, t.accent, 0.16));
@@ -71,7 +72,7 @@ function buildTheme(base) {
   t.link = t.link || t.accent;
   t.linkHover = t.linkHover || (t.isDark ? Utilities.lighten(t.link, 0.18) : Utilities.darken(t.link, 0.15));
   t.brightAccent = t.brightAccent || (t.isDark ? Utilities.lighten(t.accent, 0.18) : t.strongAccent);
-  strengthenTextTone(t);
+  if (!t.preservePalette) strengthenTextTone(t);
   t.blackBase = t.blackBase || (t.isDark ? '#050505' : t.veryDark);
   t.deepestBackground = t.deepestBackground || t.pageBackground;
   t.subtleAccentSurface = t.subtleAccentSurface || (t.isDark
@@ -80,19 +81,22 @@ function buildTheme(base) {
   t.success = t.success || '#16A34A';
   t.warning = t.warning || '#D97706';
   t.error = t.error || '#DC2626';
-  t.selection = t.selection || Utilities.mixColors(t.accent, '#ffffff', 0.6);
+  t.focusRing = t.focusRing || t.strongAccent || t.accent;
+  t.selectionBackground = t.selectionBackground || t.selection || t.selectedBackground || Utilities.mixColors(t.accent, '#ffffff', 0.6);
+  t.selectionText = t.selectionText || resolveReadableText(t.selectionBackground, t.primaryText);
+  t.selection = t.selectionBackground;
   t.glow = t.glow || rgbaFromHex(t.accent, t.isDark ? 0.34 : 0.18);
-  const lightGradients = t.isDark ? null : buildLightGradients(t);
-  t.screenGradient = t.screenGradient || lightGradients?.screenGradient || 'none';
-  t.headerGradient = t.headerGradient || lightGradients?.headerGradient || 'none';
-  t.sidebarGradient = t.sidebarGradient || lightGradients?.sidebarGradient || 'none';
-  t.surfaceGradient = t.surfaceGradient || lightGradients?.surfaceGradient || 'none';
-  t.cardGradient = t.cardGradient || lightGradients?.cardGradient || 'none';
-  t.menuGradient = t.menuGradient || lightGradients?.menuGradient || 'none';
-  t.inputGradient = t.inputGradient || lightGradients?.inputGradient || 'none';
-  t.selectedGradient = t.selectedGradient || lightGradients?.selectedGradient || 'none';
-  t.buttonGradient = t.buttonGradient || lightGradients?.buttonGradient || t.selectedGradient;
-  if (!t.isDark && lightGradients) {
+  const gradients = t.isDark ? buildDarkGradients(t, { mode: t.mode || t.displayMode }) : buildLightGradients(t);
+  t.screenGradient = t.screenGradient || gradients?.screenGradient || 'none';
+  t.headerGradient = t.headerGradient || gradients?.headerGradient || 'none';
+  t.sidebarGradient = t.sidebarGradient || gradients?.sidebarGradient || 'none';
+  t.surfaceGradient = t.surfaceGradient || gradients?.surfaceGradient || 'none';
+  t.cardGradient = t.cardGradient || gradients?.cardGradient || 'none';
+  t.menuGradient = t.menuGradient || gradients?.menuGradient || 'none';
+  t.inputGradient = t.inputGradient || gradients?.inputGradient || 'none';
+  t.selectedGradient = t.selectedGradient || gradients?.selectedGradient || 'none';
+  t.buttonGradient = t.buttonGradient || gradients?.buttonGradient || t.selectedGradient;
+  if (!t.isDark && gradients) {
     t.buttonText = resolveReadableText(t.selectedBackground, t.buttonText);
   }
   t.shadow = t.shadow || (t.isDark ? 'rgba(0,0,0,0.6)' : 'rgba(15,23,42,0.12)');
@@ -112,6 +116,66 @@ const THEME_PRESETS = [
   { id: 'dark-purple', name: 'Dark Purple', category: 'dark', background: '#16101F', surface: '#1F1730', primaryText: '#F1EAFB', accent: '#8B5CF6', border: '#31234A', isDark: true },
   { id: 'dark-green', name: 'Dark Green', category: 'dark', background: '#0F1912', surface: '#16231A', primaryText: '#E7F5EB', accent: '#22C55E', border: '#233A28', isDark: true },
   { id: 'dark-rose', name: 'Dark Rose', category: 'dark', background: '#1E0F16', surface: '#2A1620', primaryText: '#FBE7F0', accent: '#EC4899', border: '#3A1F2C', isDark: true },
+  {
+    id: 'red-dark',
+    name: 'Red + Dark',
+    category: 'dark',
+    mode: 'dark',
+    displayMode: 'dark',
+    isDark: true,
+    preservePalette: true,
+    baseColor: '#EF4444',
+    blackBase: '#030101',
+    veryDark: '#090202',
+    dark: '#160505',
+    moderatelyDark: '#2A0909',
+    midTone: '#7F1D1D',
+    moderatelyLight: '#F87171',
+    light: '#FECACA',
+    veryLight: '#FFF1F2',
+    deepestBackground: '#050101',
+    pageBackground: '#0B0202',
+    background: '#0B0202',
+    secondaryBackground: '#140404',
+    headerBackground: '#210606',
+    sidebarBackground: '#180505',
+    surface: '#1D0606',
+    elevatedSurface: '#290A0A',
+    cardBackground: '#190505',
+    inputBackground: '#130404',
+    menuBackground: '#220707',
+    primaryText: '#FFFFFF',
+    secondaryText: '#F5DDDD',
+    mutedText: '#CFAAAA',
+    inverseText: '#190202',
+    accent: '#EF4444',
+    strongAccent: '#DC2626',
+    brightAccent: '#F87171',
+    softAccent: '#FCA5A5',
+    secondaryAccent: '#2A0909',
+    selectedBackground: '#991B1B',
+    hoverBackground: '#3D1010',
+    border: '#5C2020',
+    subtleBorder: '#361010',
+    strongBorder: '#EF4444',
+    buttonBackground: '#DC2626',
+    buttonText: '#FFFFFF',
+    secondaryButtonBackground: '#321010',
+    secondaryButtonText: '#FFF1F2',
+    link: '#F87171',
+    linkHover: '#FCA5A5',
+    inputText: '#FFFFFF',
+    placeholderText: '#B98E8E',
+    focusRing: '#EF4444',
+    selectionBackground: '#7F1D1D',
+    selectionText: '#FFFFFF',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    error: '#F87171',
+    glow: 'rgba(239, 68, 68, 0.30)',
+    shadow: 'rgba(0, 0, 0, 0.52)',
+    previewSwatches: ['#030101', '#7F1D1D', '#EF4444', '#FFFFFF']
+  },
   { id: 'dark-teal', name: 'Dark Teal', category: 'dark', background: '#0C1A1A', surface: '#132625', primaryText: '#E1F5F3', accent: '#14B8A6', border: '#20403D', isDark: true },
   { id: 'dark-chocolate', name: 'Dark Chocolate', category: 'dark', background: '#1C140F', surface: '#271B14', primaryText: '#F2E6DA', accent: '#B45309', border: '#3A2A1E', isDark: true },
 
@@ -394,6 +458,49 @@ function buildLightGradients(theme) {
   };
 }
 
+function buildDarkGradients(theme, options = {}) {
+  const color = Utilities.isValidHex(getThemeBaseColor(theme)) ? getThemeBaseColor(theme) : '#8B5CF6';
+  const mode = options.mode === 'amoled' || theme.mode === 'amoled' || theme.displayMode === 'amoled' ? 'amoled' : 'dark';
+  const isAmoled = mode === 'amoled';
+  const hsl = hexToHsl(color);
+  const accent = theme.accent || hslFromBase(hsl, Utilities.clamp(Math.max(hsl.s, 78), 70, 96), 58);
+  const strongAccent = theme.strongAccent || Utilities.darken(accent, 0.1);
+  const brightAccent = theme.brightAccent || Utilities.lighten(accent, 0.18);
+  const deepestBackground = theme.deepestBackground || theme.blackBase || '#050505';
+  const pageBackground = theme.pageBackground || theme.background || deepestBackground;
+  const surface = theme.surface || pageBackground;
+  const elevatedSurface = theme.elevatedSurface || surface;
+  const cardBackground = theme.cardBackground || surface;
+  const inputBackground = theme.inputBackground || surface;
+  const menuBackground = theme.menuBackground || elevatedSurface;
+  const selectedBackground = theme.selectedBackground || Utilities.mixColors(surface, accent, 0.3);
+  const buttonBackground = theme.buttonBackground || strongAccent;
+  const headerEnd = theme.moderatelyDark || Utilities.mixColors(theme.headerBackground || surface, accent, 0.32);
+  const sidebarEnd = theme.dark || pageBackground;
+  const surfaceEnd = theme.moderatelyDark || Utilities.mixColors(surface, accent, 0.22);
+  const cardEnd = theme.subtleAccentSurface || Utilities.mixColors(cardBackground, accent, 0.16);
+  const menuEnd = theme.elevatedSurface || Utilities.mixColors(menuBackground, accent, 0.2);
+  const inputEnd = Utilities.mixColors(inputBackground, accent, isAmoled ? 0.12 : 0.16);
+
+  return {
+    screenGradient: [
+      `linear-gradient(90deg, ${rgbaFromHex(accent, isAmoled ? 0.16 : 0.13)} 0%, ${rgbaFromHex(strongAccent, isAmoled ? 0.1 : 0.085)} 18%, transparent 44%)`,
+      `radial-gradient(circle at 20% 0%, ${rgbaFromHex(brightAccent, isAmoled ? 0.34 : 0.3)} 0, transparent 38rem)`,
+      `radial-gradient(circle at 82% 10%, ${rgbaFromHex(accent, isAmoled ? 0.32 : 0.26)} 0, transparent 34rem)`,
+      `radial-gradient(circle at 50% 46%, ${rgbaFromHex(strongAccent, isAmoled ? 0.16 : 0.14)} 0, transparent 42rem)`,
+      `linear-gradient(135deg, ${deepestBackground} 0%, ${pageBackground} 48%, ${theme.dark || pageBackground} 100%)`
+    ].join(', '),
+    headerGradient: `linear-gradient(135deg, ${theme.headerBackground || elevatedSurface} 0%, ${headerEnd} 100%)`,
+    sidebarGradient: `linear-gradient(180deg, ${theme.sidebarBackground || surface} 0%, ${sidebarEnd} 100%)`,
+    surfaceGradient: `linear-gradient(145deg, ${surface} 0%, ${surfaceEnd} 100%)`,
+    cardGradient: `linear-gradient(145deg, ${cardBackground} 0%, ${cardEnd} 100%)`,
+    menuGradient: `linear-gradient(145deg, ${menuBackground} 0%, ${menuEnd} 100%)`,
+    inputGradient: `linear-gradient(135deg, ${inputBackground} 0%, ${inputEnd} 100%)`,
+    selectedGradient: `linear-gradient(135deg, ${selectedBackground} 0%, ${buttonBackground} 100%)`,
+    buttonGradient: `linear-gradient(135deg, ${selectedBackground} 0%, ${buttonBackground} 100%)`
+  };
+}
+
 function generateDarkTheme(baseColor, options = {}) {
   const color = Utilities.isValidHex(baseColor) ? baseColor : '#8B5CF6';
   const base = options.baseTheme || {};
@@ -554,6 +661,9 @@ function resolveDisplayMode(mode) {
 function resolveThemeForDisplayMode(theme, options = {}) {
   const mode = resolveDisplayMode(options.displayMode || theme.displayMode || 'light');
   const baseColor = getThemeBaseColor(theme);
+  if (theme.preservePalette && mode === (theme.displayMode || theme.mode)) {
+    return buildTheme({ ...theme, mode, displayMode: mode });
+  }
   if (mode === 'dark' || mode === 'amoled') {
     return generateDarkTheme(baseColor, { baseTheme: theme, mode });
   }
@@ -1538,6 +1648,10 @@ function isHidden(style) {
   return style.display === 'none' || style.visibility === 'hidden' || Number.parseFloat(style.opacity || '1') <= 0.02;
 }
 
+function isThemeIgnoredElement(el) {
+  return !!el.closest?.('[data-lcbc-ignore]');
+}
+
 function isMediaElement(el) {
   const tag = el.tagName;
   return ['IMG', 'VIDEO', 'CANVAS', 'PICTURE', 'SOURCE', 'SVG', 'IFRAME', 'OBJECT', 'EMBED'].includes(tag);
@@ -1757,6 +1871,7 @@ function applyBorder(el, style, theme, options) {
 
 function applySemanticElement(el, theme, options) {
   if (!(el instanceof Element) || el.id === THEME_STYLE_ID) return;
+  if (isThemeIgnoredElement(el)) return;
   const style = getComputedStyle(el);
   if (isHidden(style)) return;
 
@@ -1820,6 +1935,7 @@ function uniqueElementsForSelectors(selectors) {
 
 function setMappedRole(el, kind, role, theme, options) {
   if (!(el instanceof Element) || el.id === THEME_STYLE_ID) return;
+  if (isThemeIgnoredElement(el)) return;
   const style = getComputedStyle(el);
   if (isHidden(style) || isProtectedMediaContext(el, style)) return;
 
@@ -1957,6 +2073,7 @@ function buildThemeCss(theme, options) {
   --lcbc-secondary-text: ${t.secondaryText};
   --lcbc-muted-text: ${t.mutedText};
   --lcbc-inverse-text: ${t.inverseText};
+  --lcbc-placeholder-text: ${t.placeholderText};
   --lcbc-accent: ${t.accent};
   --lcbc-strong-accent: ${t.strongAccent};
   --lcbc-bright-accent: ${t.brightAccent};
@@ -1984,6 +2101,9 @@ function buildThemeCss(theme, options) {
   --lcbc-google-chip-text: #0B1220;
   --lcbc-link: ${t.link};
   --lcbc-link-hover: ${t.linkHover};
+  --lcbc-focus-ring: ${t.focusRing};
+  --lcbc-selection-bg: ${t.selectionBackground};
+  --lcbc-selection-text: ${t.selectionText};
   --lcbc-success: ${t.success};
   --lcbc-warning: ${t.warning};
   --lcbc-error: ${t.error};
@@ -2001,8 +2121,8 @@ function buildThemeCss(theme, options) {
 }
 
 :root[${THEME_ATTR}] ::selection {
-  background: var(--lcbc-selected-bg);
-  color: var(--lcbc-primary-text);
+  background: var(--lcbc-selection-bg);
+  color: var(--lcbc-selection-text);
 }
 
 :root[${THEME_ATTR}] [data-lcbc-bg-role="deepest"] {
@@ -2190,7 +2310,7 @@ function buildThemeCss(theme, options) {
   box-shadow: none !important;
   color: #0B1220 !important;
   -webkit-text-fill-color: #0B1220 !important;
-  caret-color: var(--lcbc-strong-accent) !important;
+  caret-color: var(--lcbc-focus-ring) !important;
 }
 
 :root[${THEME_ATTR}][${SITE_ATTR}="google"] :where(${GOOGLE_SEARCH_SHELL_SELECTORS}) :where(a, button, [role="button"], [aria-label]:not(input):not(textarea), span, div) {
@@ -2260,7 +2380,7 @@ function buildThemeCss(theme, options) {
 :root[${THEME_ATTR}] :where(${GOOGLE_SEARCHBOX_SELECTORS}) :where(input, textarea) {
   background: transparent !important;
   color: var(--lcbc-input-text) !important;
-  caret-color: var(--lcbc-accent) !important;
+  caret-color: var(--lcbc-focus-ring) !important;
 }
 
 :root[${THEME_ATTR}] [data-lcbc-text-role="primary"] {
@@ -2402,8 +2522,13 @@ function buildThemeCss(theme, options) {
 
 :root[${THEME_ATTR}] [data-lcbc-control] {
   accent-color: var(--lcbc-accent) !important;
-  caret-color: var(--lcbc-accent) !important;
-  outline-color: var(--lcbc-accent) !important;
+  caret-color: var(--lcbc-focus-ring) !important;
+  outline-color: var(--lcbc-focus-ring) !important;
+}
+
+:root[${THEME_ATTR}] :where(input, textarea, [contenteditable="true"], [role="textbox"], [role="searchbox"])::placeholder {
+  color: var(--lcbc-placeholder-text) !important;
+  opacity: 1 !important;
 }
 
 :root[${THEME_ATTR}] [data-lcbc-bg-role="button"]:hover,
@@ -2442,7 +2567,7 @@ function buildThemeCss(theme, options) {
 :root[${THEME_ATTR}] textarea:focus-visible,
 :root[${THEME_ATTR}] [role="button"]:focus-visible,
 :root[${THEME_ATTR}] [role="tab"]:focus-visible {
-  outline: 2px solid ${t.accent} !important;
+  outline: 2px solid var(--lcbc-focus-ring) !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px var(--lcbc-glow) !important;
 }

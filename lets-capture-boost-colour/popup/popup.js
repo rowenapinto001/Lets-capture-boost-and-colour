@@ -130,11 +130,12 @@ function initCapture() {
 
   $('captureVisibleBtn').addEventListener('click', () => runCapture('visible'));
   $('captureFullPageBtn').addEventListener('click', () => runCapture('full'));
+  $('captureSelectionBtn').addEventListener('click', () => runCapture('selection'));
 
   if (state.recentCapture) {
     $('recentCaptureCard').hidden = false;
     const rc = state.recentCapture;
-    $('recentCaptureInfo').textContent = `${rc.captureType === 'fullpage' ? 'Full page' : 'Visible area'} of ${rc.hostname} — ${rc.width}×${rc.height}`;
+    $('recentCaptureInfo').textContent = `${captureTypeLabel(rc.captureType)} of ${rc.hostname} — ${rc.width}×${rc.height}`;
   }
   $('openRecentCaptureBtn')?.addEventListener('click', () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
@@ -161,6 +162,12 @@ function updateProgress(payload) {
   $('progressText').textContent = payload.message;
 }
 
+function captureTypeLabel(captureType) {
+  if (captureType === 'fullpage' || captureType === 'fullpage-parts') return 'Full page';
+  if (captureType === 'selection') return 'Selection';
+  return 'Visible area';
+}
+
 async function savePendingCapture(captureRecord) {
   try {
     const storedCapture = await CaptureStore.saveCapture(captureRecord);
@@ -183,15 +190,40 @@ async function runCapture(kind) {
     setStatus('captureStatusText', Utilities.unsupportedReason(activeTab?.url), false);
     return;
   }
-  $('progressCard').hidden = false;
-  $('captureStatusCard').hidden = true;
-  $('progressFill').style.width = '0%';
-  $('progressText').textContent = kind === 'full' ? 'Preparing full-page capture…' : 'Capturing visible area…';
 
   const appearance = document.querySelector('#appearanceSegment .segment-btn.active').dataset.value;
   const hideSticky = $('optHideSticky').checked;
   const restoreScroll = $('optRestoreScroll').checked;
   const includeBackground = $('optIncludeBackground').checked;
+  const openPreview = $('optOpenPreview').checked;
+
+  if (kind === 'selection') {
+    $('progressCard').hidden = false;
+    $('captureStatusCard').hidden = true;
+    $('progressFill').style.width = '0%';
+    $('progressText').textContent = 'Starting selection capture...';
+
+    const response = await sendToContent({
+      type: 'START_SELECTION_CAPTURE_PAGE',
+      options: { appearance, includeBackground, openPreview }
+    });
+
+    if (!response.ok) {
+      $('progressCard').hidden = true;
+      setStatus('captureStatusText', response.error || 'Selection capture could not be started.', false);
+      return;
+    }
+
+    $('progressFill').style.width = '100%';
+    $('progressText').textContent = 'Drag over the area to capture on the page.';
+    setTimeout(() => window.close(), 250);
+    return;
+  }
+
+  $('progressCard').hidden = false;
+  $('captureStatusCard').hidden = true;
+  $('progressFill').style.width = '0%';
+  $('progressText').textContent = kind === 'full' ? 'Preparing full-page capture…' : 'Capturing visible area…';
 
   const type = kind === 'full' ? 'CAPTURE_FULL_PAGE_PAGE' : 'CAPTURE_VISIBLE_AREA_PAGE';
   const response = await sendToContent({
@@ -214,9 +246,17 @@ async function runCapture(kind) {
     setStatus('captureStatusText', kind === 'full' ? 'Full-page screenshot created successfully.' : 'Visible area screenshot created successfully.', false);
   }
 
+  const sourceMetadata = {
+    hostname,
+    title: activeTab.title,
+    sourceTabId: activeTab.id,
+    sourceWindowId: activeTab.windowId,
+    sourceUrl: activeTab.url,
+    captureAppearance: appearance
+  };
   const captureRecord = result.multiPart
-    ? { multiPart: true, parts: result.parts, width: result.width, height: result.height, captureType: result.captureType, hostname, title: activeTab.title }
-    : { dataUrl: result.dataUrl, width: result.width, height: result.height, captureType: result.captureType, hostname, title: activeTab.title };
+    ? { multiPart: true, parts: result.parts, width: result.width, height: result.height, captureType: result.captureType, ...sourceMetadata }
+    : { dataUrl: result.dataUrl, width: result.width, height: result.height, captureType: result.captureType, ...sourceMetadata };
 
   await StorageManager.set({ recentCapture: {
     captureType: result.captureType,
@@ -232,7 +272,7 @@ async function runCapture(kind) {
     return;
   }
 
-  if ($('optOpenPreview').checked) {
+  if (openPreview) {
     chrome.tabs.create({ url: chrome.runtime.getURL('capture/preview.html') });
   }
 }
@@ -386,7 +426,10 @@ function buildThemeCard(theme) {
 
   const swatches = document.createElement('div');
   swatches.className = 'swatches';
-  [theme.accent, theme.secondaryAccent, theme.background].forEach(c => {
+  const swatchColors = Array.isArray(theme.previewSwatches) && theme.previewSwatches.length
+    ? theme.previewSwatches
+    : [theme.accent, theme.secondaryAccent, theme.background];
+  swatchColors.forEach(c => {
     const s = document.createElement('span');
     s.className = 'swatch';
     s.style.background = c;

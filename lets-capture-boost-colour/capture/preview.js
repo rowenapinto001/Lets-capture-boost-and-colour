@@ -36,6 +36,18 @@ function filenameWithExtension(input, ext) {
   return `${Utilities.sanitizeFilename(withoutExt)}.${ext}`;
 }
 
+function captureTypeLabel(captureType) {
+  if (captureType === 'fullpage' || captureType === 'fullpage-parts') return 'Full page';
+  if (captureType === 'selection') return 'Selection';
+  return 'Visible area';
+}
+
+function captureTypeFilenameLabel(captureType) {
+  if (captureType === 'fullpage' || captureType === 'fullpage-parts') return 'fullpage';
+  if (captureType === 'selection') return 'selection';
+  return 'visible';
+}
+
 async function render() {
   const data = await chrome.storage.local.get(['pendingCapture']);
   pendingCaptureRef = data.pendingCapture;
@@ -90,8 +102,8 @@ function renderSingle() {
     fitSingleImageToViewer(img);
   };
   img.onerror = () => showEmptyState('Screenshot preview could not be decoded. Please retake the capture.');
-  $('detailType').textContent = capture.captureType === 'fullpage' ? 'Full page' : 'Visible area';
-  $('filenameInput').value = defaultFilename(capture.captureType === 'fullpage' ? 'fullpage' : 'visible', 'png');
+  $('detailType').textContent = captureTypeLabel(capture.captureType);
+  $('filenameInput').value = defaultFilename(captureTypeFilenameLabel(capture.captureType), 'png');
 }
 
 function renderParts() {
@@ -324,10 +336,9 @@ function initDownloads() {
 }
 
 function initActions() {
-  $('retakeBtn').addEventListener('click', async () => {
-    await CaptureStore.deletePendingCapture(pendingCaptureRef);
-    await chrome.storage.local.remove('pendingCapture');
-    window.close();
+  $('retakeBtn').addEventListener('click', toggleRetakeChoices);
+  document.querySelectorAll('[data-retake-kind]').forEach((button) => {
+    button.addEventListener('click', () => startRetakeCapture(button.dataset.retakeKind));
   });
 
   $('deleteBtn').addEventListener('click', async () => {
@@ -338,6 +349,70 @@ function initActions() {
   });
 
   $('closeBtn').addEventListener('click', () => window.close());
+}
+
+function retakeSourceTabId() {
+  return capture?.sourceTabId ?? pendingCaptureRef?.sourceTabId;
+}
+
+function toggleRetakeChoices() {
+  const tabId = Number(retakeSourceTabId());
+  if (!Number.isFinite(tabId)) {
+    setStatus('The original page tab is no longer available. Open the extension on the page to capture again.');
+    return;
+  }
+
+  const choices = $('retakeChoices');
+  choices.hidden = !choices.hidden;
+  setStatus(choices.hidden ? '' : 'Choose how to retake the screenshot.');
+}
+
+function retakeStatusForKind(kind) {
+  if (kind === 'full') return 'Returning to the original page and capturing the full page.';
+  if (kind === 'visible') return 'Returning to the original page and capturing the visible area.';
+  return 'Returning to the original page. Drag over the area to capture.';
+}
+
+async function startRetakeCapture(kind) {
+  const tabId = Number(retakeSourceTabId());
+  if (!Number.isFinite(tabId)) {
+    setStatus('The original page tab is no longer available. Open the extension on the page to capture again.');
+    return;
+  }
+
+  const { captureSettings = {} } = await chrome.storage.local.get(['captureSettings']);
+  const appearance =
+    capture?.captureAppearance ||
+    pendingCaptureRef?.captureAppearance ||
+    captureSettings.captureAppearance ||
+    'current-theme';
+
+  $('retakeChoices').hidden = true;
+  setStatus(retakeStatusForKind(kind));
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'START_RETAKE_CAPTURE',
+      tabId,
+      options: {
+        kind,
+        appearance,
+        hideSticky: captureSettings.hideStickyElements !== false,
+        restoreScroll: captureSettings.restoreScrollPosition !== false,
+        includeBackground: captureSettings.includePageBackground !== false
+      }
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.error || 'Retake could not be started.');
+    }
+
+    setStatus(kind === 'selection'
+      ? 'Retake started. Select the area on the original page.'
+      : 'Retake started. A new preview will open when it finishes.');
+  } catch (e) {
+    setStatus(e.message || 'Retake could not be started.');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
