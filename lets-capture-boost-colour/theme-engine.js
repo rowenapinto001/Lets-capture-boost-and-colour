@@ -2496,7 +2496,9 @@ function buildThemeCss(theme, options) {
 }
 
 :root[${THEME_ATTR}] :where(${YOUTUBE_CHIP_SELECTORS}) :where(a, span, yt-formatted-string, #text) {
-  color: inherit !important;
+  color: var(--lcbc-youtube-chip-text) !important;
+  -webkit-text-fill-color: var(--lcbc-youtube-chip-text) !important;
+  opacity: 1 !important;
 }
 
 :root[${THEME_ATTR}] :where(${YOUTUBE_SELECTED_CHIP_SELECTORS}) {

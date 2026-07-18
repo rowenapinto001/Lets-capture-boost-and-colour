@@ -13,6 +13,42 @@ const INJECT_FILES = [
 
 const lastCaptureTime = new Map(); // windowId -> timestamp, to respect capture rate limits
 
+async function configureSidePanel() {
+  if (!chrome.sidePanel) return;
+  try {
+    await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  } catch (error) {
+    console.warn('[LCBC background] side panel setup failed', error);
+  }
+}
+
+function notifySidePanelPageChange() {
+  chrome.runtime.sendMessage({ type: 'SIDEPANEL_PAGE_CHANGED' }).catch(() => {
+    // The panel is closed, so there is nothing to refresh.
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  configureSidePanel();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  configureSidePanel();
+});
+
+configureSidePanel();
+
+chrome.tabs.onActivated.addListener(() => {
+  notifySidePanelPageChange();
+});
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+  if (changeInfo.status === 'complete' || changeInfo.url) {
+    const [activeTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (activeTab?.id === tabId) notifySidePanelPageChange();
+  }
+});
+
 if (typeof importScripts === 'function') {
   importScripts('capture-store.js');
 }

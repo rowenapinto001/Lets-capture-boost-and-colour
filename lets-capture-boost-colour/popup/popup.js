@@ -72,6 +72,9 @@ async function init() {
     if (message.type === 'CAPTURE_PROGRESS') {
       updateProgress(message.payload);
     }
+    if (message.type === 'SIDEPANEL_PAGE_CHANGED') {
+      window.location.reload();
+    }
   });
 }
 
